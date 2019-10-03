@@ -14,6 +14,8 @@ To install this module type the following:
    make test
    make install
 
+Disclaimer:We will update the software but not maintain the pull requests.
+
 COPYRIGHTS
 ==========
 Copyright © 2002-2011 United States Government as represented by Administrator for The National Aeronautics and Space Administration. All Rights Reserved.
