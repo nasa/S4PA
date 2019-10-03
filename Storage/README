@@ -1,0 +1,42 @@
+S4PA/Storage Version $Revision: 1.1.1.1 $ (S4PA $Name:  $)
+=============================================
+
+It contains methods for handling data compression, uncompression, checksum
+computation, placing data in appropriate directories, creating symbolic links,
+publication to WHOM, data delettion and granule record keeping.
+
+INSTALLATION
+
+To install this module type the following:
+
+   perl Makefile.PL
+   make
+   make test
+   make install
+
+DEPENDENCIES
+
+This module requires these other modules and libraries:
+
+POSIX
+Safe
+File::Basename
+File::stat
+File::Copy
+MLDBM
+DB_File
+Fcntl
+S4P
+S4P::TimeTools
+S4PA::Receiving
+XML::LibXML
+XML::LibXML::NodeList
+File::KGlob
+
+COPYRIGHT AND LICENCE
+
+Copyright (C) 2004 Chris Lynnes
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself. 
+

@@ -1,0 +1,806 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This schema is a placeholder for Granule level, S4PA -->
+<!-- meta-data elements  -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+<xs:include schemaLocation="S4paCommonTypes.xsd"/>
+
+<xs:element name="CollectionMetaData">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+    Collection Meta-Data Information. This contains the product ShortName
+    and LongName as well as the VersionID. These elements are associated
+    with the Collection (S4paCollection.xsd) level schema.
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:sequence>
+   <xs:element ref="Description" minOccurs="0"/>	
+   <xs:element ref="LongName" minOccurs="0"/>
+   <xs:element ref="ShortName"/>
+   <xs:element ref="VersionID"/>
+   <xs:element ref="URL" minOccurs="0"/>
+  </xs:sequence>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="DataGranule">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+     Meta-data specific to the granule. This currently includes six
+     elements, including granulID (ID for the granule, which is usually
+     the filename), Format (format of data e.g., HDF-EOS), CheckSum,
+     SizeBytesDataGranule (size of the granule in bytes), InsertDateTime
+     (date and time granule was inserted into S4PA), ProductionDateTime
+     (date and time the granule was produced).
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:all>		
+   <xs:element ref="GranuleID"/>
+   <xs:element ref="LocalGranuleID" minOccurs="0"/>
+   <xs:element ref="Format" minOccurs="0"/>
+   <xs:element ref="CheckSum" minOccurs="0"/>
+   <xs:element ref="BrowseFile" minOccurs="0"/>
+   <xs:element ref="MapFile" minOccurs="0"/>
+   <xs:element name="SizeBytesDataGranule"/>
+   <xs:element ref="InsertDateTime" minOccurs="0"/>
+   <xs:element ref="ProductionDateTime" minOccurs="0"/>
+    <xs:element ref="PGEVersionClass" minOccurs="0"/>
+   <xs:element ref="Granulits" minOccurs="0"/>
+   <xs:element ref="DayNightFlag" minOccurs="0"/>
+  </xs:all>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="PGEVersionClass">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+    Lists the PGE version that was used to process the data
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:sequence>
+   <xs:element ref="PGEVersion" minOccurs="0"/>
+  </xs:sequence>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="PGEVersion">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+   </xs:documentation>
+ </xs:annotation>
+  <xs:simpleType>
+    <xs:restriction base="xs:string"/>
+  </xs:simpleType>
+</xs:element>
+
+<xs:element name="SizeBytesDataGranule">
+  <xs:simpleType>
+    <xs:list>
+     <xs:simpleType>
+    <xs:union memberTypes="xs:unsignedLong"/>
+     </xs:simpleType>
+    </xs:list>
+  </xs:simpleType>
+</xs:element>
+
+<xs:element name="InsertDateTime">
+  <xs:simpleType>
+    <xs:list>
+     <xs:simpleType>
+      <xs:union memberTypes="xs:date xs:time"/>
+     </xs:simpleType>
+    </xs:list>
+  </xs:simpleType>
+</xs:element>
+
+<xs:element name="ProductionDateTime">
+  <xs:simpleType>
+    <xs:list>
+     <xs:simpleType>
+    <xs:union memberTypes="xs:string"/>
+     </xs:simpleType>
+    </xs:list>
+  </xs:simpleType>
+</xs:element>
+
+<xs:element name="GranuleID">
+  <xs:annotation>
+    <xs:documentation>
+     The unique identifier for each granule. In most cases this is the
+     file name.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:simpleType>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="180"/>
+    </xs:restriction>
+  </xs:simpleType>
+</xs:element>
+
+<xs:element name="LocalGranuleID">
+  <xs:annotation>
+    <xs:documentation>
+     The unique identifier for each granule. In most cases this is the
+     file name.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:simpleType>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="180"/>
+    </xs:restriction>
+  </xs:simpleType>
+</xs:element>
+
+<xs:element name="Format">
+  <xs:annotation>
+    <xs:documentation>
+     The format of the data. This type is unique to S4PA.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:simpleType>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="32"/>
+    </xs:restriction>
+  </xs:simpleType>
+</xs:element>
+
+<xs:element name="CheckSum">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+    Checksum, which is a unique number, based on the content of the file.
+    There are two elements, CheckSumValue (value of the checksum) and
+    CheckSumType (the type of checksum e.g., 64bit long).
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:sequence>
+   <xs:element ref="CheckSumType" minOccurs="0"/>
+   <xs:element name="CheckSumValue" type="xs:string" minOccurs="0"/>
+  </xs:sequence>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="CheckSumType">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+   </xs:documentation>
+ </xs:annotation>
+  <xs:simpleType>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="12"/>
+    </xs:restriction>
+  </xs:simpleType>
+</xs:element>
+
+<xs:element name="BrowseFile">
+ <xs:annotation>
+  <xs:documentation>
+   The browse file associated with the granule.
+  </xs:documentation>
+ </xs:annotation>
+ <xs:simpleType>
+  <xs:restriction base="xs:string">
+   <xs:maxLength value="180"/>
+  </xs:restriction>
+ </xs:simpleType>
+</xs:element>
+ 
+<xs:element name="MapFile">
+ <xs:annotation>
+  <xs:documentation>
+   The HDF4 map file associated with the granule.
+  </xs:documentation>
+ </xs:annotation>
+ <xs:simpleType>
+  <xs:restriction base="xs:string">
+   <xs:maxLength value="180"/>
+  </xs:restriction>
+ </xs:simpleType>
+</xs:element>
+ 
+<xs:element name="Granulits">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+    This container is for multi-file granules or granulits.
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:all>
+   <xs:element name="Granulit" minOccurs="0"/>
+  </xs:all>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="Granulit">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+    The container is for individual files, or granulit, in 
+    multi-file granules or granulits.
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:all>
+   <xs:element ref="GranulitID"/>
+   <xs:element ref="FileName"/>
+   <xs:element ref="CheckSum"/>
+   <xs:element name="FileSize" type="xs:unsignedLong" minOccurs="0"/>
+  </xs:all>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="GranulitID">
+  <xs:annotation>
+    <xs:documentation>
+     The unique identifier for each granule. In most cases this is the
+     file name.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:simpleType>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="8"/>
+    </xs:restriction>
+  </xs:simpleType>
+</xs:element>
+
+
+<xs:element name="FileName">
+  <xs:annotation>
+    <xs:documentation>
+     The unique identifier for each granule. In most cases this is the
+     file name.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:simpleType>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="180"/>
+    </xs:restriction>
+  </xs:simpleType>
+</xs:element>
+
+<xs:element name="FileSize">
+  <xs:annotation>
+    <xs:documentation>
+     Size of each file
+    </xs:documentation>
+  </xs:annotation>
+  <xs:simpleType>
+    <xs:restriction base="xs:unsignedLong">
+      <!--<xs:maxLength value="10"/>-->
+    </xs:restriction>
+  </xs:simpleType>
+</xs:element>
+
+
+<xs:element name="DayNightFlag">
+  <xs:simpleType>
+    <xs:list>
+     <xs:simpleType>
+    <xs:union memberTypes="xs:string"/>
+     </xs:simpleType>
+    </xs:list>
+  </xs:simpleType>
+</xs:element>
+
+<xs:element name="RangeDateTime">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+    The date and time range of the granule. This includes four
+    elements, RangeEndingTime, RangeEndingDate, RangeBeginningTime
+    and RangeBeginningDate.
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:all>
+   <xs:element name="RangeEndingDate" type="xs:date"/>
+   <xs:element name="RangeEndingTime" type="xs:time"/>
+   <xs:element name="RangeBeginningDate" type="xs:date"/>
+   <xs:element name="RangeBeginningTime" type="xs:time"/>
+  </xs:all>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="SpatialDomainContainer">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+    Spatial information on granule. Currently contains two element,
+    VerticalSpatialDomain and HorizontalSpatialDomainContainer, which 
+    provide information on Vertical fields, and the following horizontal 
+    fields: GPolygon and BoundingRectangle lat/lon coordinates for the 
+    granule.
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:sequence>
+   <xs:element name="LocalityValue" minOccurs="0"/>
+   <xs:element name="ZoneIdentifier" minOccurs="0"/>				 
+   <xs:element ref="VerticalSpatialDomain" minOccurs="0"/>
+   <xs:element ref="HorizontalSpatialDomainContainer" minOccurs="0"/>
+  </xs:sequence>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="VerticalSpatialDomain">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+    Contains vertical spatial fields. 
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:sequence>
+   <xs:element ref="VerticalSpatialDomainContainer" minOccurs="0" maxOccurs="unbounded"/>
+  </xs:sequence>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="VerticalSpatialDomainContainer" >
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+    Vertical spatial information on the granule. Contains two elements,
+    a specific vertical spatial type and value. 
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:all>
+   <xs:element ref="VerticalSpatialDomainType"/>
+   <xs:element ref="VerticalSpatialDomainValue"/>
+  </xs:all>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="VerticalSpatialDomainType">
+  <xs:annotation>
+    <xs:documentation>
+     Contains specific vertical spatial type.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:simpleType>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="80"/>
+    </xs:restriction>
+  </xs:simpleType>
+</xs:element>
+
+<xs:element name="VerticalSpatialDomainValue">
+  <xs:annotation>
+    <xs:documentation>
+     Contains specific vertical spatial value.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:simpleType>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="80"/>
+    </xs:restriction>
+  </xs:simpleType>
+</xs:element>
+
+<xs:element name="HorizontalSpatialDomainContainer">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+    Horizontal spatial information on the granule. Currently contains two
+    elements, GPolygon and BoundingRectangle.
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:all>
+   <xs:element ref="GPolygon" minOccurs="0"/>
+   <xs:element ref="BoundingRectangle" minOccurs="0"/>
+  </xs:all>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="GPolygon">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+    Horizontal spatial information, on the granule, in the GPolygon form.
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:all>
+   <xs:element ref="Boundary"/>
+  </xs:all>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="Boundary">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+   Boundary of the GPloygon, consisting of a series of points.
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:sequence>
+   <xs:element ref="Point" minOccurs="0" maxOccurs="unbounded"/>
+  </xs:sequence>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="Point">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+    A GPolygon point, consisting of a longitude and latitude coordinate.
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:sequence>
+   <xs:element ref="ExclusionFlag" minOccurs="0" maxOccurs="1"/>	
+   <xs:element ref="PointLongitude"/>
+   <xs:element ref="PointLatitude"/>
+  </xs:sequence>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="ExclusionFlag">
+  <xs:annotation>
+    <xs:documentation>
+     Indicates whether the polygon should be included or excluded
+    </xs:documentation>
+    </xs:annotation>	
+    <xs:simpleType>
+		<xs:restriction base="xs:string" />
+    </xs:simpleType>		
+  </xs:element>
+
+<xs:element name="PointLatitude">
+  <xs:annotation>
+    <xs:documentation>
+     decimal degrees (+ = north (default), - = south)
+    </xs:documentation>
+  </xs:annotation>
+  <xs:simpleType>
+    <xs:restriction base="xs:float">
+      <xs:minInclusive value="-90.0000"/>
+      <xs:maxInclusive value="+90.0000"/>
+    </xs:restriction>
+  </xs:simpleType>
+</xs:element>
+
+<xs:element name="PointLongitude">
+  <xs:annotation>
+    <xs:documentation>
+     decimal degrees (+ = east (default), - = west)
+    </xs:documentation>
+  </xs:annotation>
+  <xs:simpleType>
+    <xs:restriction base="xs:float">
+      <xs:minInclusive value="-180.0000"/>
+      <xs:maxInclusive value="+180.0000"/>
+    </xs:restriction>
+  </xs:simpleType>
+</xs:element>
+
+<xs:element name="BoundingRectangle">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+    Horizontal spatial information, on the granule, in the
+    BoundingRectangle form.
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:sequence>
+   <xs:element ref="WestBoundingCoordinate"/>
+   <xs:element ref="NorthBoundingCoordinate"/>
+   <xs:element ref="EastBoundingCoordinate"/>
+   <xs:element ref="SouthBoundingCoordinate"/>
+  </xs:sequence>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="OrbitCalculatedSpatialDomain">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+    Orbit spatial temporal information on the granule.
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:sequence>
+   <xs:element ref="OrbitCalculatedSpatialDomainContainer" minOccurs="0" maxOccurs="unbounded"/>
+  </xs:sequence>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="OrbitCalculatedSpatialDomainContainer">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+     Orbital Information on the granule. Includes, OrbitNumber,
+     EquatorCrossingLongitude, EquatorCrossingDate and
+     EquatorCrossingTime.
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:sequence>
+   <xs:element name="OrbitNumber" type="xs:unsignedLong" minOccurs="0"/>
+   <xs:element name="StartOrbitNumber" minOccurs="0"/>
+   <xs:element name="StopOrbitNumber" minOccurs="0"/>		
+   <xs:element ref="EquatorCrossingLongitude" minOccurs="0"/>
+   <xs:element name="EquatorCrossingDate" type="xs:date" minOccurs="0"/>
+   <xs:element name="EquatorCrossingTime" type="xs:time" minOccurs="0"/>
+   <xs:element ref="Orbit" minOccurs="0"/>
+  </xs:sequence>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="EquatorCrossingLongitude">
+ <xs:annotation>
+   <xs:documentation>
+     decimal degrees (+ = east (default), - = west)
+   </xs:documentation>
+ </xs:annotation>
+ <xs:simpleType>
+   <xs:restriction base="xs:float">
+     <xs:minInclusive value="-180.0000"/>
+     <xs:maxInclusive value="+180.0000"/>
+   </xs:restriction>
+ </xs:simpleType>
+</xs:element>
+
+<xs:element name="Orbit">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+    The orbit attributes are need for ECHO Backtrack orbit searches in OMI data
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:sequence>
+   <xs:element name="AscendingCrossing" type="xs:float"/>
+   <xs:element ref="StartLat" type="xs:float"/>
+   <xs:element name="StartDirection" type="xs:string"/>
+   <xs:element ref="EndLat" type="xs:float"/>
+   <xs:element name="EndDirection" type="xs:string"/>
+   <xs:element name="NumberOfOrbit" type="xs:integer"/> 
+  </xs:sequence>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="StartLat">
+  <xs:annotation>
+    <xs:documentation>
+     Start Latitude in decimal degrees (+ = north (default), - = south)
+    </xs:documentation>
+  </xs:annotation>
+  <xs:simpleType>
+    <xs:restriction base="xs:float">
+      <xs:minInclusive value="-90.0000"/>
+      <xs:maxInclusive value="+90.0000"/>
+    </xs:restriction>
+  </xs:simpleType>
+</xs:element>
+
+<xs:element name="EndLat">
+  <xs:annotation>
+    <xs:documentation>
+     End Latitude in decimal degrees (+ = north (default), - = south)
+    </xs:documentation>
+  </xs:annotation>
+  <xs:simpleType>
+    <xs:restriction base="xs:float">
+      <xs:minInclusive value="-90.0000"/>
+      <xs:maxInclusive value="+90.0000"/>
+    </xs:restriction>
+  </xs:simpleType>
+</xs:element>
+
+<xs:element name="Platform">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+    The platform (short name) the instrument was mounted on. Includes
+    reference to the instrument container element. The platform
+    container structure is the same in ECHOs schema. The S4PA Collection
+    level meta-data uses a platform container, which has the same
+    structure in GCMD-DIF schema.
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:sequence>
+   <xs:element ref="PlatformShortName"/>
+   <xs:element ref="Instrument" minOccurs="0" maxOccurs="unbounded"/>
+  </xs:sequence>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="Instrument">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+    The instrument associated with the sensor. Includes an InstrumentShortName
+    and reference to sensor container element.
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:sequence>
+   <xs:element name="InstrumentShortName">
+     <xs:simpleType>
+        <xs:restriction base="xs:string">
+           <xs:maxLength value="20"/>
+        </xs:restriction>
+     </xs:simpleType>
+   </xs:element>
+   <xs:element ref="Sensor"  minOccurs="0" maxOccurs="unbounded"/>
+  </xs:sequence>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="Sensor">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+    Sensor (short name) used to measure data.
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:all>
+   <xs:element ref="SensorShortName"/>
+  </xs:all>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="PSAs">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+    PI specific attributes.
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:sequence>
+   <xs:element ref="PSA" minOccurs="0" maxOccurs="unbounded"/>
+  </xs:sequence>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="PSA">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+     PI specific attribute. Includes, PSAName and PSAValue.
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:sequence>
+   <xs:element ref="PSAName"/>
+   <xs:element ref="PSAValue"/>
+  </xs:sequence>
+ </xs:complexType>
+</xs:element>
+<xs:element name="PSAName">
+   <xs:simpleType>
+      <xs:restriction base="xs:string">
+         <xs:maxLength value="50"/>
+      </xs:restriction>
+   </xs:simpleType>
+</xs:element>
+<xs:element name="PSAValue">
+   <xs:simpleType>
+      <xs:restriction base="xs:string">
+         <xs:maxLength value="500"/>
+      </xs:restriction>
+   </xs:simpleType>
+</xs:element>
+
+<xs:element name="MeasuredParameters">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+    PI specific attributes.
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:sequence>
+   <xs:element ref="MeasuredParameter" minOccurs="0" maxOccurs="unbounded"/>
+  </xs:sequence>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="MeasuredParameter">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+     PI specific attribute. Includes, ParameterName, QAPercentMissing, QAPercentOutofBounds, QAInterpolatedData, AutomaticQualityFlag, AutomaticQualityFlagExplanation, OperationalQualityFlag, OperationalQualityFlagExplanation, ScienceQualityFlag, ScienceQualityFlagExplanation.
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:sequence>
+   <xs:element ref="ParameterName" minOccurs="0"/>
+   <xs:element ref="QAPercentMissing" minOccurs="0"/>
+   <xs:element ref="QAPercentOutofBounds" minOccurs="0"/>
+   <xs:element ref="QAPercentInterpolatedData" minOccurs="0"/>
+   <xs:element ref="QAPercentCloudCover" minOccurs="0"/>			
+   <xs:element ref="AutomaticQualityFlag" minOccurs="0"/>
+   <xs:element ref="AutomaticQualityFlagExplanation" minOccurs="0"/>
+   <xs:element ref="OperationalQualityFlag" minOccurs="0"/>
+   <xs:element ref="OperationalQualityFlagExplanation" minOccurs="0"/>
+   <xs:element ref="ScienceQualityFlag" minOccurs="0"/>
+   <xs:element ref="ScienceQualityFlagExplanation" minOccurs="0"/>
+  </xs:sequence>
+ </xs:complexType>
+</xs:element>
+<xs:element name="ParameterName">
+   <xs:simpleType>
+      <xs:restriction base="xs:string">
+         <xs:maxLength value="50"/>
+      </xs:restriction>
+   </xs:simpleType>
+</xs:element>
+<xs:element name="QAPercentMissing">
+   <xs:simpleType>
+      <xs:restriction base="xs:string">
+         <xs:maxLength value="50"/>
+      </xs:restriction>
+   </xs:simpleType>
+</xs:element>
+<xs:element name="QAPercentOutofBounds">
+   <xs:simpleType>
+      <xs:restriction base="xs:string">
+         <xs:maxLength value="50"/>
+      </xs:restriction>
+   </xs:simpleType>
+</xs:element>
+<xs:element name="QAPercentInterpolatedData">
+   <xs:simpleType>
+      <xs:restriction base="xs:string">
+         <xs:maxLength value="50"/>
+      </xs:restriction>
+   </xs:simpleType>
+</xs:element>
+<xs:element name="QAPercentCloudCover">
+   <xs:simpleType>
+      <xs:restriction base="xs:string">
+         <xs:maxLength value="50"/>
+      </xs:restriction>
+   </xs:simpleType>
+</xs:element>
+<xs:element name="AutomaticQualityFlag">
+   <xs:simpleType>
+      <xs:restriction base="xs:string">
+         <xs:maxLength value="50"/>
+      </xs:restriction>
+   </xs:simpleType>
+</xs:element>
+<xs:element name="AutomaticQualityFlagExplanation">
+   <xs:simpleType>
+      <xs:restriction base="xs:string">
+         <xs:maxLength value="500"/>
+      </xs:restriction>
+   </xs:simpleType>
+</xs:element>
+<xs:element name="OperationalQualityFlag">
+   <xs:simpleType>
+      <xs:restriction base="xs:string">
+         <xs:maxLength value="50"/>
+      </xs:restriction>
+   </xs:simpleType>
+</xs:element>
+<xs:element name="OperationalQualityFlagExplanation">
+   <xs:simpleType>
+      <xs:restriction base="xs:string">
+         <xs:maxLength value="500"/>
+      </xs:restriction>
+   </xs:simpleType>
+</xs:element>
+<xs:element name="ScienceQualityFlag">
+   <xs:simpleType>
+      <xs:restriction base="xs:string">
+         <xs:maxLength value="50"/>
+      </xs:restriction>
+   </xs:simpleType>
+</xs:element>
+<xs:element name="ScienceQualityFlagExplanation">
+   <xs:simpleType>
+      <xs:restriction base="xs:string">
+         <xs:maxLength value="500"/>
+      </xs:restriction>
+   </xs:simpleType>
+</xs:element>
+
+<xs:element name="ProducersMetaData">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+ This section will contain a copy of the ODL file in a text output format.
+   </xs:documentation>
+ </xs:annotation>
+</xs:element>
+
+<xs:element name="ProducersQA">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+ This section will contain a copy of the QA file in a text output format.
+   </xs:documentation>
+ </xs:annotation>
+</xs:element>
+
+</xs:schema>

@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- S4paSubscription.xsd,v 1.6 2006/11/27 11:43:28 hegde Exp -->
+<!-- -@@@ S4PA, Version $Name:  $ -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xs:element name="subscription">
+		<xs:annotation>
+			<xs:documentation>The root element containing push and pull subscriptions. The classification of subscription in to push or pull depends on the way data is transferred in a subscription. It has two attributes: HTTP_ROOT for specifying the root URL for access restricted data  and FTP_ROOT for specifying the root URL of public data. These attributes apply for Pull subscriptions only.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="pushSubscription" minOccurs="0" maxOccurs="unbounded">
+					<xs:annotation>
+						<xs:documentation>Element for specifying push subscriptions. Element for specifying Pull subscriptions. ID attribute must be unique across all subscriptions. LABEL specifies any user-specified string that will be included in data notices.  HTTP_ROOT specifies the root URL for access restricted data  and FTP_ROOT specifies the root URL of public data. HTTP_ROOT and FTP_ROOT over-ride their value in the parent node. Optional MAX_GRANULE_COUNTcan be set to control number of granules in a given subscription. Optional INCLUDE_BROWSE can be set to includ browse file in a given subscription. Optional INCLUDE_HDF4MAP can be set to includ map file in a given subscription.</xs:documentation>
+					</xs:annotation>
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="notification">
+								<xs:annotation>
+									<xs:documentation>Element for specifying the address and the format of subscription notification. FORMAT can be S4PA, LEGACY, PDR and USER-DEFINED. FORMAT=S4PA will produce notifications containing URLs to the data. FORMAT=LEGACY will mimic ECS subscription notification. FORMAT=PDR will produce subscription notifications in SIPS PDR format. FORMAT=USER-DEFINED will execute user provided filter script to create any user-defined format.</xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="filter" type="xs:string" minOccurs="0" maxOccurs="1"/>
+									</xs:sequence>
+									<xs:attribute name="FORMAT" use="required">
+										<xs:simpleType>
+											<xs:restriction base="xs:string">
+												<xs:enumeration value="S4PA"/>
+												<xs:enumeration value="LEGACY"/>
+												<xs:enumeration value="PDR"/>
+												<xs:enumeration value="USER-DEFINED"/>
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:attribute>
+									<xs:attribute name="PROTOCOL" use="required">
+										<xs:simpleType>
+											<xs:restriction base="xs:string">
+												<xs:enumeration value="mailto"/>
+												<xs:enumeration value="ftp"/>
+												<xs:enumeration value="sftp"/>
+												<xs:enumeration value="file"/>
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:attribute>
+									<xs:attribute name="ADDRESS" type="xs:string" use="required"/>
+									<xs:attribute name="NOTICE_SUFFIX" type="xs:string" use="optional"/>
+									<xs:attribute name="NOTICE_SUBJECT" type="xs:string" use="optional"/>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="destination">
+								<xs:annotation>
+									<xs:documentation>Element for specifying the destination for subscribed data.  It has two attributes: PROTOCOL and ADDRESS. PROTOCOL can be ftp, sftp and file. ADDRESS will specify the host/directory.</xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:attribute name="PROTOCOL" use="required">
+										<xs:simpleType>
+											<xs:restriction base="xs:string">
+												<xs:enumeration value="sftp"/>
+												<xs:enumeration value="file"/>
+												<xs:enumeration value="ftp"/>
+												<xs:enumeration value="mailto"/>
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:attribute>
+									<xs:attribute name="ADDRESS" type="xs:string" use="required"/>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="dataset" maxOccurs="unbounded">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="validator" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+										<xs:element name="filter" minOccurs="0" maxOccurs="unbounded">
+											<xs:complexType>
+												<xs:simpleContent>
+													<xs:extension base="xs:string">
+														<xs:attribute name="PATTERN" type="xs:string" use="required"/>
+													</xs:extension>
+												</xs:simpleContent>
+											</xs:complexType>
+										</xs:element>
+									</xs:sequence>
+									<xs:attribute name="NAME" type="xs:string" use="required"/>
+									<xs:attribute name="VERSION" type="xs:string" use="optional"/>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+						<xs:attribute name="ID" type="xs:string" use="required"/>
+						<xs:attribute name="LABEL" type="xs:string" use="required"/>
+						<xs:attribute name="FTP_ROOT" type="xs:string" use="optional"/>
+						<xs:attribute name="HTTP_ROOT" type="xs:string" use="optional"/>
+						<xs:attribute name="MAX_GRANULE_COUNT" type="xs:unsignedLong" use="optional"/>
+						<xs:attribute name="USER" type="xs:string" use="optional"/>
+						<xs:attribute name="INCLUDE_BROWSE" type="xs:boolean" use="optional"/>
+						<xs:attribute name="INCLUDE_HDF4MAP" type="xs:boolean" use="optional"/>
+						<xs:attribute name="VERIFY" type="xs:boolean" use="optional"/>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="pullSubscription" minOccurs="0" maxOccurs="unbounded">
+					<xs:annotation>
+						<xs:documentation>Element for specifying pull subscriptions. ID attribute must be unique across all subscriptions. LABEL specifies any user-specified string that will be included in data notices. HTTP_ROOT specifies the root URL for access restricted data  and FTP_ROOT specifies the root URL of public data. HTTP_ROOT and FTP_ROOT over-ride their value in the parent node. Optional MAX_GRANULE_COUNTcan be set to control number of granules in a given subscription. Optional INCLUDE_BROWSE can be set to includ browse file in a given subscription. Optional INCLUDE_HDF4MAP can be set to includ map file in a given subscription.</xs:documentation>
+					</xs:annotation>
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="notification">
+								<xs:annotation>
+									<xs:documentation>Element for specifying the address and the format of subscription notification. FORMAT can be S4PA, LEGACY and PDR. FORMAT=S4PA will produce notifications containing URLs to the data. FORMAT=LEGACY will mimic ECS subscription notification. FORMAT=PDR will produce subscription notifications in SIPS PDR format.</xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="filter" type="xs:string" minOccurs="0" maxOccurs="1"/>
+									</xs:sequence>
+									<xs:attribute name="FORMAT" use="required">
+										<xs:simpleType>
+											<xs:restriction base="xs:string">
+												<xs:enumeration value="S4PA"/>
+												<xs:enumeration value="LEGACY"/>
+												<xs:enumeration value="PDR"/>
+												<xs:enumeration value="USER-DEFINED"/>
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:attribute>
+									<xs:attribute name="PROTOCOL" use="required">
+										<xs:simpleType>
+											<xs:restriction base="xs:string">
+												<xs:enumeration value="mailto"/>
+												<xs:enumeration value="ftp"/>
+												<xs:enumeration value="sftp"/>
+												<xs:enumeration value="file"/>
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:attribute>
+									<xs:attribute name="ADDRESS" type="xs:string" use="required"/>
+									<xs:attribute name="NOTICE_SUFFIX" type="xs:string" use="optional"/>
+									<xs:attribute name="NOTICE_SUBJECT" type="xs:string" use="optional"/>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="destination" minOccurs="0">
+								<xs:annotation>
+									<xs:documentation>For pull subscriptions, destination is optional. If specified, it indicates that the subscribed data has to be sent to an intermediate destination from which data is pulled. It has two attributes: PROTOCOL and ADDRESS. PROTOCOL can be ftp, sftp and file. ADDRESS will specify the host/directory.</xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:attribute name="PROTOCOL" use="required">
+										<xs:simpleType>
+											<xs:restriction base="xs:string">
+												<xs:enumeration value="sftp"/>
+												<xs:enumeration value="file"/>
+												<xs:enumeration value="ftp"/>
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:attribute>
+									<xs:attribute name="ADDRESS" type="xs:string" use="required"/>
+									<xs:attribute name="URL_ROOT" type="xs:string" use="required"/>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="dataset" maxOccurs="unbounded">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="validator" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+										<xs:element name="filter" minOccurs="0" maxOccurs="unbounded">
+											<xs:complexType>
+												<xs:simpleContent>
+													<xs:extension base="xs:string">
+														<xs:attribute name="PATTERN" type="xs:string" use="required"/>
+													</xs:extension>
+												</xs:simpleContent>
+											</xs:complexType>
+										</xs:element>
+										<xs:element name="service" minOccurs="0">
+											<xs:annotation>
+												<xs:documentation>For HTTP_service that provide on-the-fly services to files downloaded via the HTTP protocol.</xs:documentation>
+											</xs:annotation>
+											<xs:complexType>
+												<xs:attribute name="NAME" type="xs:string" use="required"/>
+												<xs:attribute name="CHANNELS" type="xs:string" use="optional"/>
+												<xs:attribute name="CHNUMBERS" type="xs:string" use="optional"/>
+												<xs:attribute name="WVNUMBERS" type="xs:string" use="optional"/>
+												<xs:attribute name="VARIABLES" type="xs:string" use="optional"/>
+												<xs:attribute name="BBOX" type="xs:string" use="optional"/>
+												<xs:attribute name="FORMAT" type="xs:string" use="optional"/>
+												<xs:attribute name="COMPRESS_ID" type="xs:string" use="optional"/>
+												<xs:attribute name="REASON" type="xs:string" use="optional"/>
+											</xs:complexType>
+										</xs:element>
+									</xs:sequence>
+									<xs:attribute name="NAME" type="xs:string" use="required"/>
+									<xs:attribute name="VERSION" type="xs:string" use="optional"/>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+						<xs:attribute name="ID" type="xs:string" use="required"/>
+						<xs:attribute name="LABEL" type="xs:string" use="required"/>
+						<xs:attribute name="HTTP_ROOT" type="xs:string" use="optional"/>
+						<xs:attribute name="FTP_ROOT" type="xs:string" use="optional"/>
+						<xs:attribute name="MAX_GRANULE_COUNT" type="xs:unsignedLong" use="optional"/>
+						<xs:attribute name="USER" type="xs:string" use="optional"/>
+						<xs:attribute name="INCLUDE_BROWSE" type="xs:boolean" use="optional"/>
+						<xs:attribute name="INCLUDE_HDF4MAP" type="xs:boolean" use="optional"/>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+			<xs:attribute name="HTTP_ROOT" use="optional">
+				<xs:simpleType>
+					<xs:restriction base="xs:string"/>
+				</xs:simpleType>
+			</xs:attribute>
+			<xs:attribute name="FTP_ROOT" use="optional">
+				<xs:simpleType>
+					<xs:restriction base="xs:string"/>
+				</xs:simpleType>
+			</xs:attribute>
+			<xs:attribute name="NOTICE_SUBJECT" use="optional">
+				<xs:simpleType>
+					<xs:restriction base="xs:string"/>
+				</xs:simpleType>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

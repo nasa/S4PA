@@ -1,0 +1,62 @@
+#!/bin/bash
+#
+#       /etc/rc.d/init.d/s4pd
+#
+#       <start/stop all S4PA/S4PM stations>
+#
+# chkconfig: 2345 95 10
+# description: start/stop all S4PA/S4PM stations
+#
+# <tags -- see below for tag definitions.  *Every line* from the top
+#  of the file to the end of the tags section must begin with a #
+#  character.  After the tags section, there should be a blank line.
+#  This keeps normal comments in the rest of the file from being
+#  mistaken for tags, should they happen to fit the pattern.>
+
+# Source function library.
+. /etc/init.d/functions
+
+# environment
+export S4PAUSER=s4paops
+export S4PAEXEC=s4pservices.pl
+export S4PACONF=/home/s4paops/OPS/cfg/s4paservices.cfg
+export PATH=/tools/gdaac/OPS/bin:$PATH
+export PERLLIB=/tools/gdaac/OPS/share/perl5:$PERLLIB
+
+
+start() {
+        echo -n "Starting S4P: "
+        runuser -l $S4PAUSER -c "$S4PAEXEC -f $S4PACONF -a start"
+        touch /var/lock/subsys/s4p
+        return 0
+}
+
+stop() {
+        echo -n "Shutting down S4P: "
+        runuser -l $S4PAUSER -c "$S4PAEXEC -f $S4PACONF -a stop"
+        rm -f /var/lock/subsys/s4p
+        return 0
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    status)
+        echo -n "S4P status: "
+        runuser -l $S4PAUSER -c "$S4PAEXEC -f $S4PACONF -a status"
+        exit 0
+        ;;
+    restart)
+        stop
+        start
+        ;;
+    *)
+        echo "Usage: <servicename> {start|stop|status|restart}"
+        exit 1
+        ;;
+esac
+exit $?

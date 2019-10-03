@@ -1,0 +1,346 @@
+Rev 3.43.7   July 26, 2019
+
+Features:
+  - ActiveFs monitoring job automatically recycle volumes based on the specified free space threshold.
+  - Storage job automatically handle multiple replacement based on each dataset setting.
+  - New housekeeping job to monitor zombie/defunct running jobs under each station.
+
+Scripts/Modules/Schema
+
+  s4pa_cmr_dataset.pl
+  s4pa_create_DN.pl
+  s4pa_dataset_relocate.pl
+  s4pa_delete_data.pl
+  s4pa_echo_dataset.pl
+  s4pa_edos_poller.pl
+  s4pa_fetch_revised_DIFs.pl
+  s4pa_file_pusher.pl
+  s4pa_get_cmr_access.pl
+  s4pa_get_echo_access.pl
+  s4pa_merge_pan.pl
+  s4pa_publish_cmr.pl
+  s4pa_publish_dotchart.pl
+  s4pa_publish_echo.pl
+  s4pa_publish_giovanni.pl
+  s4pa_publish_mirador.pl
+  s4pa_publish_user.pl
+  s4pa_publish_whom.pl
+  s4pa_recv_data.pl
+  s4pa_relocate_metadata_method.pl
+  s4pa_remote_polling_data.pl
+  s4pa_remote_polling_pdr.pl
+  s4pa_rest_worker.pl
+  s4pa_subscribe.pl
+    1. Update obsolete 'defined %<hash>' and 'defined @<array>' to be without 'defined' for CentOS-7.
+
+  s4pa_active_fs_monitor.pl
+    1. Perform volumes recycle under rolling archive if configured.
+
+  s4pa_deploy.pl
+    1. Update obsolete 'defined %<hash>' and 'defined @<array>' to be without 'defined' for CentOS-7.
+    2. Add %cfg_recycle_threshold in s4pa_active_fs.cfg if RECYCLE_VOLUME_THRESHOLD is specified.
+    3. Transform MULTIPLE_REPLACEMENT attribute setting into storage configuration.
+    4. Add new s4pa_zombie_mnitor.pl script to houseKeeper station configuration.
+
+  s4pa_reconcile_disk.pl
+    1. Add threshold option for volumes recycle under rolling archive.
+
+  s4pa_recycle_volumes.pl
+    1. New. A standard housekeeping job to recycle free archive volumes configured 
+       under rolling archive active file system.
+
+  s4pa_store_data.pl
+    1. Update obsolete 'defined %<hash>' and 'defined @<array>' to be without 'defined' for CentOS-7.
+    2. Add support of handling multiple replacement according to dataset setting.
+
+  s4pa_zombie_monitor.pl
+    1. New. A standard housekeeping job to monitor and kill zombie/defunct running jobs.
+
+  MachineSearch.pm
+  Storage.pm
+    1. Update obsolete 'defined %<hash>' and 'defined @<array>' to be without 'defined' for CentOS-7.
+
+  Receiving.pm
+    1. Correct deprecated qw(...) with extra parenthese around it for CentOS-7.
+
+  S4PA.pm
+    1. Update obsolete 'defined %<hash>' and 'defined @<array>' to be without 'defined' for CentOS-7.
+    2. Strip off 'use strict' inside anonymous subroutine for CentOS-7.
+
+  S4paDescriptor.xsd
+    1. Add MULTIPLE_REPLACEMENT attribute for dataClass, dataset, and dataVersion.
+    2. Add RECYCLE_VOLUME_THRESHOLD attribute under provider's activeFileSystem.
+    3. Add new <zombie> element under <houseKeeper>.
+
+  S4paGran2CMR.xsl
+
+    1. Add AIRG2SSD_IRonly to global spatial collections list to add granule level
+       spatial metadata during CMR publication.
+
+
+Rev 3.43.6   April 12, 2019
+
+Scripts/Modules/Schema
+
+  s4pa_controller.pl
+    1. Add <-i> option for including start up of delete stations in allStart.
+    2. Retry each terminated job after Shutdown command.
+
+  s4pa_deploy.pl
+    1. Clean up all ftp related fields under CMR Reconciliation.
+    2. Update default dotchart recon staging ftp_push_dir.
+    3. Backup current descriptor and subscription files under config directory.
+    4. Backup station.list file
+    5. Remove 'Check Instance Integrity' button from GUI interface
+    6. Change PUBLISH_MIRADOR to default 'false'.
+
+  s4pa_recon.pl
+    1. Clean up all ftp related fields under CMR Reconciliation.
+
+  s4pd
+    1. New. Sample S4PA service daemon for system start/stop.
+
+  s4pservices.pl
+    1. New. Script for S4P services on system start/stop.
+
+  Reconciliation.pm
+    1. Clean up all ftp related fields under CMR Reconciliation.
+    2. Add fetch_local_file routine for 'file' protocol on the partner.
+    3. Update Dotchart endpoint_uri from tads1 to opseng.gesdisc.eosdis.nasa.gov.
+
+  S4paDescriptor.xsd
+    1. Change CMR Reconciliation's URL attribute to be optional.
+    2. Change PUBLISH_MIRADOR to default 'false'.
+
+  s4paservices.cfg
+    1. New. Sample configuration file for system start/stop service.
+
+Rev 3.43.5   April 13, 2018
+
+Scripts/Modules/Schema
+
+  s4pa_deploy.pl
+    1. Add protocol option to publish dotchart and mirador configuration files.
+    2. Add protocol option to reconciliation configuration files.
+    3. Add 'Retry Failed Jobs' interface to all stations.
+
+  s4pa_publish_cmr.pl
+    1. Purge log files under pending directory.
+
+  s4pa_publish_dotchart.pl
+    1. Change hard-coded 'ftp' protocol for postoffice work order to use
+       configured protocol option from the configuration file.
+    2. Purge log files under pending directory.
+
+  s4pa_publish_mirador.pl
+    1. Change hard-coded 'ftp' protocol for postoffice work order to use
+       configured protocol option from the configuration file.
+
+  s4pa_recon.pl
+    1. Support SFTP protocol for Dotchart and Mirador file transfer.
+
+  s4pa_subscribe.pl
+    1. Purge log files under pending directory.
+    2. Skip reading configuration file for instance without subscription
+       to prevent failing job at subscribe station.
+
+  Reconciliation.pm
+    1. Support SFTP protocol for Dotchart and Mirador file transfer.
+
+
+Rev 3.43.4   February 23, 2018
+
+Features:
+  - Stop the inclusion of 'DataFormat' and 'MeasuredParameters' in granule publication to CMR.
+
+Scripts/Modules/Schema
+
+  s4pa_db_export.pl
+    1. Skip temp file with trailing _z or _Z filename and create new temp file.
+
+  s4pa_mkpdrs.pl
+    1. Add optional switch to specify ORIGINATING_SYSTEM in PDR.
+    2. Add optional switch to remove METADATA fileSpec from all fileGroup.
+
+  s4pa_publish_cmr.pl
+    1. Remove obsolete DODS reference from OPeNDAP OnlineResourceURL Type.
+
+  S4paGran2CMR.xsl
+    1. Stop inclusion of DataFormat and MeasuredParameter in granule publication to CMR.
+  
+Rev 3.43.3   November 3, 2017
+
+Features:
+
+  - Allow multiple check integrity jobs to run simultaneously under the station.
+  - PDR poller need to support recursive polling.
+
+Scripts/Modules/Schema
+
+  s4pa_check_integrity.pl
+    1. Allow multiple check integrity jobs to run simultaneously under the station.
+
+  s4pa_deploy.pl
+    1. Process the new attributes of pdrPoller into PDR polling job's configuration file.
+
+  s4pa_edos_poller.pl
+    1. Only remove original PDR if filtered filename is different after pdrFilter action.
+
+  s4pa_publish_cmr.pl
+    1. Skip collection metadata fileGroup in pending deletion PDR.
+
+  s4pa_publish_dotchart.pl
+    1. Skip collection metadata fileGroup in pending deletion PDR.
+
+  s4pa_publish_mirador.pl
+    1. Skip collection metadata fileGroup in pending deletion PDR.
+
+  s4pa_remote_polling_data.pl
+    1. Remove the initial setcwd command on SFTP polling session to prevent
+       stepping into wrong directory when remote polling directory is a 
+       relative path.
+
+  s4pa_remote_polling_pdr.pl
+    1. Remove the initial setcwd command on SFTP polling session to prevent
+       stepping into wrong directory when remote polling directory is a 
+       relative path.
+
+    2. Support the recursive polling of PDR via FTP, SFTP, FILE protocols.
+
+  s4pa_transient_archive.pl
+    1. Skip processing of non-S4PA granule metadata files, especially the
+       collection metadata files under climatology dataset.
+    2. Parse each granule metadata files under the qualified directories and
+       only add those granule's with temporal coverage in transient period. 
+
+  Receiving.pm
+    1. Add permission flag on SftpGet routine to make sure owner has write on downloaded files.
+
+    2. Corrected typo on remote port in SftpConnect.
+
+  S4paDescriptor.xsd
+    1. Add PROTOCOL, RECURSIVE, MAX_DEPTH for pdrPoller.
+
+Rev 3.43.2   April 28, 2017
+
+Features:
+
+  - Use 's4pa_backup_file.pl' to update metadata file's styleshee and collection metadata links.
+  - Replace full URL of collection metadtata link with relative path in granule metadata file.
+  - Replace S4PA's 'sftp -b' system call with Net::SFTP::Foreign library for SFTP polling,
+    downloading and pushing files.
+
+Scripts/Modules/Schema
+
+  s4pa_backup_file.pl
+    1. Add optional switch to skip backuping metadata files.
+
+    2. Set S4PA_ROOT, DATASET_SHORTNAME, DATASET_VERSION environment variables
+       to pass the setting to metadata modification script.
+
+  s4pa_convert_DIF.pl
+    1. Use relative path of '/data/S4paDIF102HTML.xsl' for stylesheet link.
+
+  s4pa_file_pusher.pl
+    1. Use Net::SFTP::Foreign for file pushing via SFTP protocol.
+
+  s4pa_recon.pl
+    1. Remove ECHO specific coding on version matching between S4PA and partners.
+
+  s4pa_remote_polling_data.pl
+    1. Use Net::SFTP::Foreign for polling via SFTP protocol. 
+
+  s4pa_remote_polling_pdr.pl
+    1. Use Net::SFTP::Foreign for polling via SFTP protocol.
+
+  Receiving.pm
+    1. Add four new routines: SftpConnect, SftpGet, SftpGetFileGroup, SftpPut,
+       which use Net::SFTP::Foreign instead of Net::SSH2::SFTP for better performance.
+
+    2. Switch from 'sftp_put' to 'SftpPut' in put routine for file pushing via SFTP protocol.
+
+    3. Switch from  'S4P::FileGroup::download' to 'SftpGetFileGroup' in ReceiveData
+       routine for file downloading via SFTP protocol.
+
+Rev 3.43.1   March 31, 2017
+
+Features:
+  - Disable access type matching for each collection in PublishCMR station.
+  - Support data polling via SFTP protocol.
+
+Scripts/Modules/Schema
+
+  s4pa_deploy.pl
+
+    1. Stop generationg 'UPDATE_CMR_ACCESS.wo' after deployment.
+
+    2. Add support for SFTP protocol in data poller.
+
+  s4pa_publish_cmr.pl
+
+    1. Disable the confirmation process on matching access_type of each collection
+       between S4PA and CMR on granule publishing.
+
+  s4pa_remote_polling_data.pl
+
+    1. Add two routines ssh_connect and sftp_poll to support SFTP polling protocol.
+
+    2. Support EXTERNAL_API for SFTP polling protocol.
+
+  S4paDescriptor.xsd
+
+    1. Add 'SFTP' to dataPollerJobType PROTOCOL attribute's allowed list.
+
+    2. Add optional 'PORT' attribute to dataPollerJobType.
+
+Rev 3.43.0   February 10, 2017
+
+Features:
+  - Skip specific granules publication to CMR/Mirador.
+
+Scripts/Module/Schema
+
+  s4pa_deploy.pl
+
+    1. Parse 'skipPublication' of PSA Name/Value pairs under CMR and Mirador publication
+       as global parameters.
+    2. Parse 'skipPublication' of XPATH definition under dataClass, dataset, and dataVersion
+       as collection specific parameters.
+    3. Populate @cfg_psa_skip array with defined PSA pair in 's4pa_insert_cmr.cfg' under
+       publish CMR station and 's4pa_insert_mirador.cfg' under publish Mirador station.
+    4. Populate %cfg_xpath_skip hash with defined XPATH in 's4pa_insert_mirador.cfg' under
+       publish CMR station and 's4pa_insert_mirador.cfg' under publish Mirador station.
+
+s4pa_fetch_revised_DIFs.pl
+
+    1. Correct array type configuration parameters to be 'LIST' to match with the
+       pre-defined array type in S4PA::WriteStationConfig.
+
+s4pa_get_cmr_access.pl
+
+    1. Correct array type configuration parameters to be 'LIST' to match with the
+       pre-defined array type in S4PA::WriteStationConfig.
+
+s4pa_publish_cmr.pl
+
+    1. Parse @cfg_psa_skip and %cfg_xpath_skip from configuration file and skip granule
+       publication if requirement match.
+
+s4pa_publish_mirador.pl
+
+    1. Parse @cfg_psa_skip and %cfg_xpath_skip from configuration file and skip granule
+       publication if requirement match.
+
+Reconciliation.pm
+
+    1. Update default Dotchart URL from http://tads1u.ecs.nasa.gov/... to
+       https://tads1.gesdisc.eosdis.nasa.gov/...
+    2. Update default Mirador URL to be https protocol.
+
+S4paDescriptor.xsd
+
+    1. Add new 'skipPublication' element for global non-publish granules requirement
+       under //publication/cmr and //publication/mirador.
+    2. Add new 'skipPublication' element with the new 'skipPublicationType' for collection
+       specific non-publish granules requirement under dataClass, dataset, and dataVersion.
+

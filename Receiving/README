@@ -1,0 +1,43 @@
+S4PA/Receiving Version $Revision: 1.1.1.1 $ (S4PA $Name:  $)
+===============================================
+
+This module contains methods for data transfer, metadata extraction, metadata
+conversion to XML and disk allocation.
+
+INSTALLATION
+
+To install this module type the following:
+
+   perl Makefile.PL
+   make
+   make test
+   make install
+
+DEPENDENCIES
+
+This module requires these other modules and libraries:
+
+S4P
+S4P::PDR
+S4P::PAN
+S4P::FileGroup
+S4P::FileSpec
+S4P::TimeTools
+Net::SSH2
+Net::SSH2::SFTP
+Net::SSH2::File
+Net::FTP
+Net::Netrc
+File::Basename
+File::KGlob
+File::stat
+XML::LibXML
+Fcntl
+
+COPYRIGHT AND LICENCE
+
+Copyright (C) 2004 Chris Lynnes
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself. 
+

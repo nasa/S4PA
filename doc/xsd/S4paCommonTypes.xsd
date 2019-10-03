@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This schema is a placeholder for elements that are common to both -->
+<!-- Granule and Collection level, S4PA meta-data -->
+<xs:schema elementFormDefault="qualified" attributeFormDefault="unqualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:element name="Description">
+		<xs:annotation>
+			<xs:documentation>
+     This is the collection description for the data product that is contained in the ODL or data file.
+    </xs:documentation>
+		</xs:annotation>
+		<xs:simpleType>
+			<xs:restriction base="xs:string">
+				<xs:maxLength value="200"/>
+			</xs:restriction>
+		</xs:simpleType>
+	</xs:element>
+	<xs:element name="ShortName">
+		<xs:annotation>
+			<xs:documentation>
+     Product short name for both granule and collection level,
+     S4PA meta-data.
+    </xs:documentation>
+		</xs:annotation>
+		<xs:simpleType>
+			<xs:restriction base="xs:string">
+				<xs:maxLength value="30"/>
+			</xs:restriction>
+		</xs:simpleType>
+	</xs:element>
+	<xs:element name="InstrumentShortName">
+		<xs:annotation>
+			<xs:documentation>
+     Instrument short name for both granule and collection level,
+     S4PA meta-data.
+    </xs:documentation>
+		</xs:annotation>
+		<xs:simpleType>
+			<xs:restriction base="xs:string">
+				<xs:maxLength value="20"/>
+			</xs:restriction>
+		</xs:simpleType>
+	</xs:element>
+	<xs:element name="SensorShortName">
+		<xs:annotation>
+			<xs:documentation>
+     Sensor short name for both granule and collection level,
+     S4PA meta-data.
+    </xs:documentation>
+		</xs:annotation>
+		<xs:simpleType>
+			<xs:restriction base="xs:string">
+				<xs:maxLength value="20"/>
+			</xs:restriction>
+		</xs:simpleType>
+	</xs:element>
+	<xs:element name="PlatformShortName">
+		<xs:annotation>
+			<xs:documentation>
+     Platform short name for both granule and collection level,
+     S4PA meta-data.
+    </xs:documentation>
+		</xs:annotation>
+		<xs:simpleType>
+			<xs:restriction base="xs:string">
+				<xs:maxLength value="20"/>
+			</xs:restriction>
+		</xs:simpleType>
+	</xs:element>
+	<xs:element name="LongName">
+		<xs:annotation>
+			<xs:documentation>
+     Product long name for both granule and collection level,
+     S4PA meta-data.
+    </xs:documentation>
+		</xs:annotation>
+		<xs:simpleType>
+			<xs:restriction base="xs:string">
+				<xs:maxLength value="500"/>
+			</xs:restriction>
+		</xs:simpleType>
+	</xs:element>
+	<xs:element name="VersionID">
+		<xs:annotation>
+			<xs:documentation>
+      Version identifier for both granule and collection level, 
+      S4PA meta-data.
+     </xs:documentation>
+		</xs:annotation>
+		<xs:simpleType>
+			<xs:restriction base="xs:string">
+				<xs:maxLength value="10"/>
+			</xs:restriction>
+		</xs:simpleType>
+	</xs:element>
+	<xs:element name="URL">
+		<xs:annotation>
+			<xs:documentation>
+                        </xs:documentation>
+		</xs:annotation>
+		<xs:simpleType>
+			<xs:restriction base="xs:string">
+				<xs:maxLength value="512"/>
+			</xs:restriction>
+		</xs:simpleType>
+	</xs:element>
+	<xs:element name="WestBoundingCoordinate">
+		<xs:annotation>
+			<xs:documentation>
+     decimal degrees (+ = east (default), - = west)
+    </xs:documentation>
+		</xs:annotation>
+		<xs:simpleType>
+			<xs:restriction base="xs:float">
+				<xs:minInclusive value="-180.0000"/>
+				<xs:maxInclusive value="+180.0000"/>
+			</xs:restriction>
+		</xs:simpleType>
+	</xs:element>
+	<xs:element name="NorthBoundingCoordinate">
+		<xs:annotation>
+			<xs:documentation>
+      decimal degrees (+ = north (default), - = south)
+    </xs:documentation>
+		</xs:annotation>
+		<xs:simpleType>
+			<xs:restriction base="xs:float">
+				<xs:minInclusive value="-90.0000"/>
+				<xs:maxInclusive value="+90.0000"/>
+			</xs:restriction>
+		</xs:simpleType>
+	</xs:element>
+	<xs:element name="EastBoundingCoordinate">
+		<xs:annotation>
+			<xs:documentation>
+      decimal degrees (+ = east (default), - = west)
+    </xs:documentation>
+		</xs:annotation>
+		<xs:simpleType>
+			<xs:restriction base="xs:float">
+				<xs:minInclusive value="-180.0000"/>
+				<xs:maxInclusive value="+180.0000"/>
+			</xs:restriction>
+		</xs:simpleType>
+	</xs:element>
+	<xs:element name="SouthBoundingCoordinate">
+		<xs:annotation>
+			<xs:documentation>
+      decimal degrees (+ = north (default), - = south)
+    </xs:documentation>
+		</xs:annotation>
+		<xs:simpleType>
+			<xs:restriction base="xs:float">
+				<xs:minInclusive value="-90.0000"/>
+				<xs:maxInclusive value="+90.0000"/>
+			</xs:restriction>
+		</xs:simpleType>
+	</xs:element>
+</xs:schema>

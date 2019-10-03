@@ -1,0 +1,1460 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- S4paDescriptor.xsd,v 1.76 2015/08/28 19:03:58 glei Exp -->
+<!-- -@@@ S4PA, Version $Name:  $ -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xs:complexType name="skipPublicationType">
+		<xs:simpleContent>
+			<xs:extension base="xs:string">
+				<xs:attribute name="OPERATOR" use="optional" default="EQ">
+					<xs:simpleType>
+						<xs:restriction base="xs:string">
+							<xs:enumeration value="EQ"/>
+							<xs:enumeration value="NE"/>
+							<xs:enumeration value="GT"/>
+							<xs:enumeration value="GE"/>
+							<xs:enumeration value="LT"/>
+							<xs:enumeration value="LE"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:attribute>
+				<xs:attribute name="VALUE" type="xs:string" use="optional">
+					<xs:annotation>
+						<xs:documentation>Value of the xpath for granule to be skipped. If not defined, the existence of the xpath will be used.</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:complexType name="ignoreConditionType">
+		<xs:simpleContent>
+			<xs:extension base="xs:string">
+				<xs:attribute name="OPERATOR" use="optional" default="EQ">
+					<xs:simpleType>
+						<xs:restriction base="xs:string">
+							<xs:enumeration value="EQ"/>
+							<xs:enumeration value="NE"/>
+							<xs:enumeration value="GT"/>
+							<xs:enumeration value="GE"/>
+							<xs:enumeration value="LT"/>
+							<xs:enumeration value="LE"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:attribute>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:complexType name="uniqueAttributeType">
+		<xs:simpleContent>
+			<xs:extension base="xs:string">
+				<xs:attribute name="OPERATOR" use="optional" default="EQ">
+					<xs:simpleType>
+						<xs:restriction base="xs:string">
+							<xs:enumeration value="EQ"/>
+							<xs:enumeration value="NE"/>
+							<xs:enumeration value="GT"/>
+							<xs:enumeration value="GE"/>
+							<xs:enumeration value="LT"/>
+							<xs:enumeration value="LE"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:attribute>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:complexType name="dataPollerJobType">
+		<xs:sequence>
+			<xs:element name="dataset" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>Dataset characteristics. The text content must be the pattern for matching filenames found during polling.</xs:documentation>
+				</xs:annotation>
+				<xs:complexType mixed="true">
+					<xs:sequence>
+						<xs:element name="file" minOccurs="0" maxOccurs="1">
+							<xs:complexType>
+								<xs:attribute name="PATTERN" type="xs:string"  use="required">
+									<xs:annotation>
+										<xs:documentation>Pattern for primary file name</xs:documentation>
+									</xs:annotation>
+								</xs:attribute>
+								<xs:attribute name="ALIAS" type="xs:string"  use="optional">
+									<xs:annotation>
+										<xs:documentation>Pattern for renaming the polled file</xs:documentation>
+									</xs:annotation>
+								</xs:attribute>
+							</xs:complexType>
+						</xs:element>
+						<xs:element name="associateFile" minOccurs="0" maxOccurs="unbounded">
+							<xs:complexType>
+								<xs:attribute name="PATTERN" type="xs:string"  use="required">
+									<xs:annotation>
+										<xs:documentation>Pattern for associated file name</xs:documentation>
+									</xs:annotation>
+								</xs:attribute>
+								<xs:attribute name="ALIAS" type="xs:string"  use="optional">
+									<xs:annotation>
+										<xs:documentation>Pattern for renaming the polled file</xs:documentation>
+									</xs:annotation>
+								</xs:attribute>
+							</xs:complexType>
+						</xs:element>
+					</xs:sequence>
+					<xs:attribute name="NAME" use="required">
+						<xs:annotation>
+							<xs:documentation>Dataset name.</xs:documentation>
+						</xs:annotation>
+						<xs:simpleType>
+							<xs:restriction base="xs:string">
+								<xs:pattern value="([a-z]|[A-Z]|[0-9]|_|-){1,30}"/>
+							</xs:restriction>
+						</xs:simpleType>
+					</xs:attribute>
+					<xs:attribute name="VERSION" use="optional">
+						<xs:annotation>
+							<xs:documentation>Dataset version</xs:documentation>
+						</xs:annotation>
+						<xs:simpleType>
+							<xs:restriction base="xs:string">
+								<xs:pattern value="\s*|\S{1,10}"/>
+							</xs:restriction>
+						</xs:simpleType>
+					</xs:attribute>
+					<xs:attribute name="ALIAS" type="xs:string" use="optional">
+						<xs:annotation>
+							<xs:documentation>Pattern for renaming the polled files</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+		<xs:attribute name="NAME" use="required">
+			<xs:annotation>
+				<xs:documentation>Name of the poller. Must be a alpha-numberical string.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:pattern value="([a-z]|[A-Z]|[0-9]|_)+"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="HOST" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>Name of the host being polled.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="DIR" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>Name of the directory being polled.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="PROTOCOL" use="optional">
+			<xs:annotation>
+				<xs:documentation>Protocol to be used for polling, default to FTP.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="FTP"/>
+					<xs:enumeration value="FILE"/>
+					<xs:enumeration value="HTTP"/>
+					<xs:enumeration value="SFTP"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="PORT" use="optional">
+			<xs:annotation>
+				<xs:documentation>Port number to be used for SFTP polling, default to 22.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="EXTERNAL_API" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>An API to supply the list of files (in URL|size format) for a http polling.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="RECURSIVE" type="xs:boolean" use="optional">
+			<xs:annotation>
+				<xs:documentation>Boolean value (true or false) indicating whether the polling is recursive for FTP polling.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="MAX_DEPTH" type="xs:integer" use="optional">
+			<xs:annotation>
+				<xs:documentation>Maximum directory depth for FILE and HTTP polling.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="IGNORE_HISTORY" type="xs:boolean" use="optional">
+			<xs:annotation>
+				<xs:documentation>Boolean value (true or false) indicating whether the polling is ignoring history file checking or not, default to false.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="MAX_FILE_GROUP" type="xs:integer" use="optional">
+			<xs:annotation>
+				<xs:documentation>Maximum file groups in a PDR (output of polling).</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="REPOLL_PAUSE" type="xs:integer" use="optional">
+			<xs:annotation>
+				<xs:documentation>Sleep time in second before repolling to check if file size changed.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="MINIMUM_FILE_SIZE" type="xs:integer" use="optional">
+			<xs:annotation>
+				<xs:documentation>Minimum file size in bytes for file to be polled.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="ORIGINATING_SYSTEM">
+			<xs:annotation>
+				<xs:documentation>Orginating system for use in PDRs. It's value is used to determine the remote location for pushing PANs.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:pattern value="([a-z]|[A-Z]|[0-9]|_)+"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="SUB_DIR_PATTERN" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>Sub-directory name pattern in Linux date format for a ftp polling to limit the scanning only under matched directories.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="LATENCY" type="xs:integer" use="optional">
+			<xs:annotation>
+				<xs:documentation>Latency in days before current date for a matching directory name pattern ftp polling.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:complexType name="pdrPollerJobType">
+		<xs:sequence>
+			<xs:element name="exclude" minOccurs="0">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="dataset" maxOccurs="unbounded">
+							<xs:complexType>
+								<xs:attribute name="NAME" use="required">
+									<xs:simpleType>
+										<xs:restriction base="xs:string">
+											<xs:pattern value="([a-z]|[A-Z]|[0-9]|_|-){1,30}"/>
+										</xs:restriction>
+									</xs:simpleType>
+								</xs:attribute>
+								<xs:attribute name="VERSION" use="optional">
+									<xs:simpleType>
+										<xs:restriction base="xs:string">
+											<xs:pattern value="\s*|\S{1,10}"/>
+										</xs:restriction>
+									</xs:simpleType>
+								</xs:attribute>
+							</xs:complexType>
+						</xs:element>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="pdrFilter" minOccurs="0" maxOccurs="unbounded">
+				<xs:complexType>
+					<xs:simpleContent>
+						<xs:extension base="xs:string">
+							<xs:attribute name="PATTERN" type="xs:string" use="required"/>
+						</xs:extension>
+					</xs:simpleContent>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+		<xs:attribute name="NAME" use="required">
+			<xs:annotation>
+				<xs:documentation>Name of the poller. Must be alpha-numberical word.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:pattern value="([a-z]|[A-Z]|[0-9]|_)+"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="HOST" use="required">
+			<xs:annotation>
+				<xs:documentation>Name of the host being polled.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:pattern value="\S+"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="DIR" use="required">
+			<xs:annotation>
+				<xs:documentation>Name of the directory being polled.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:pattern value="\S+"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="IGNORE_HISTORY" type="xs:boolean" use="optional">
+			<xs:annotation>
+				<xs:documentation>Boolean value (true or false) indicating whether the polling is ignoring history file checking or not, default to false.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="MERGE_PAN" type="xs:boolean" use="optional">
+			<xs:annotation>
+				<xs:documentation>Boolean value (true or false) indicating whether pan merging is required, default to false.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="PATTERN" type="xs:string" use="optional" default="\.PDR$"/>
+		<xs:attribute name="TYPE" use="optional" default="DEFAULT">
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="EDOS"/>
+					<xs:enumeration value="DEFAULT"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="PROTOCOL" use="optional">
+			<xs:annotation>
+				<xs:documentation>Protocol to be used for polling, default to FTP.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="FTP"/>
+					<xs:enumeration value="FILE"/>
+					<xs:enumeration value="SFTP"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="PORT" use="optional">
+			<xs:annotation>
+				<xs:documentation>Port number to be used for SFTP polling, default to 22.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="RECURSIVE" type="xs:boolean" use="optional">
+			<xs:annotation>
+				<xs:documentation>Boolean value (true or false) indicating whether the polling is recursive.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="MAX_DEPTH" type="xs:integer" use="optional">
+			<xs:annotation>
+				<xs:documentation>Maximum directory depth for FILE polling.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:complexType name="dataclassType">
+		<xs:sequence>
+			<xs:element name="method" type="methodType" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Methods applicable to entire data class.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="skipPublication" type="skipPublicationType" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>XPATH expressions that specify cases where granules does not need to be published.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="dataset" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>Dataset information</xs:documentation>
+				</xs:annotation>
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="method" type="methodType" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Methods applicable to dataset.</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="ignoreCondition" type="ignoreConditionType" minOccurs="0" maxOccurs="unbounded">
+							<xs:annotation>
+								<xs:documentation>XPATH expressions that specify cases where an incoming granule has to be ignored.</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="uniqueAttribute" type="uniqueAttributeType" minOccurs="0" maxOccurs="unbounded">
+							<xs:annotation>
+								<xs:documentation>XPATH expressions for determining the uniqueness of a granule. If the value of XPATH expression matches in all cases, incoming granule is deemed a valid replacement. Otherwise, it is treated as a new granule.</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="associateData" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Associated dataset name and/or version, ex. the associated browse dataset.</xs:documentation>
+							</xs:annotation>
+							<xs:complexType>
+								<xs:attribute name="NAME" type="xs:string" use="required"/>
+								<xs:attribute name="VERSION" type="xs:string" use="optional"/>
+								<xs:attribute name="TYPE" type="xs:string" use="optional" default="Browse"/>
+							</xs:complexType>
+						</xs:element>
+						<xs:element name="postStorageTask" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Special task to be executed after each granule storage. S4PA will append filenames to the argument during command invokation. Can be use to fulfill any extra task to be done between granule ingest and publishing.</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="postDeletionTask" minOccurs="0">
+							<xs:annotation>
+								<xs:documentation>Special task to be executed after each granule deletion. S4PA will append filenames to the argument during command invokation. Can be use to fulfill any extra task to be done right before granule's phsical removal or clean up what was created by postStorageTask.</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="skipPublication" type="skipPublicationType" minOccurs="0" maxOccurs="unbounded">
+							<xs:annotation>
+								<xs:documentation>XPATH expressions that specify cases where granules does not need to be published.</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="dataVersion" minOccurs="0" maxOccurs="unbounded">
+							<xs:annotation>
+								<xs:documentation>Dataset version. LABEL can be an empty string for version-less system or a non-white space string for a versioned system.</xs:documentation>
+							</xs:annotation>
+							<xs:complexType>
+								<xs:sequence>
+									<xs:element name="uniqueAttribute" type="uniqueAttributeType" minOccurs="0" maxOccurs="unbounded">
+										<xs:annotation>
+											<xs:documentation>XPATH expressions for determining the uniqueness of a granule. If the value of XPATH expression matches in all cases, incoming granule is deemed a valid replacement. Otherwise, it is treated as a new granule.</xs:documentation>
+										</xs:annotation>
+									</xs:element>
+									<xs:element name="ignoreCondition" type="ignoreConditionType" minOccurs="0" maxOccurs="unbounded">
+										<xs:annotation>
+											<xs:documentation>XPATH expressions which specify conditions in which an incoming granule has to be ignored. </xs:documentation>
+										</xs:annotation>
+									</xs:element>
+									<xs:element name="associateData" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>Associated dataset name and/or version, ex. the associated browse dataset.</xs:documentation>
+										</xs:annotation>
+										<xs:complexType>
+											<xs:attribute name="NAME" type="xs:string" use="required"/>
+											<xs:attribute name="VERSION" type="xs:string" use="optional"/>
+											<xs:attribute name="TYPE" type="xs:string" use="optional" default="Browse"/>
+										</xs:complexType>
+									</xs:element>
+									<xs:element name="postStorageTask" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>Special task to be executed after each granule storage. S4PA will append filenames to the argument during command invokation. Can be use to fulfill any extra task to be done between granule ingest and publishing.</xs:documentation>
+										</xs:annotation>
+									</xs:element>
+									<xs:element name="postDeletionTask" minOccurs="0">
+										<xs:annotation>
+											<xs:documentation>Special task to be executed after each granule deletion. S4PA will append filenames to the argument during command invokation. Can be use to fulfill any extra task to be done right before granule's phsical removal or clean up what was created by postStorageTask.</xs:documentation>
+										</xs:annotation>
+									</xs:element>
+									<xs:element name="skipPublication" type="skipPublicationType" minOccurs="0" maxOccurs="unbounded">
+										<xs:annotation>
+											<xs:documentation>XPATH expressions that specify cases where granules does not need to be published.</xs:documentation>
+										</xs:annotation>
+									</xs:element>
+								</xs:sequence>
+								<xs:attribute name="LABEL" use="required">
+									<xs:simpleType>
+										<xs:restriction base="xs:string">
+											<xs:pattern value="\s*|\S{1,10}"/>
+										</xs:restriction>
+									</xs:simpleType>
+								</xs:attribute>
+								<xs:attribute name="COLLECTION_VERSION" type="xs:string" use="optional">
+									<xs:annotation>
+										<xs:documentation>CMR Collection version. Must be specified for versionless dataset.</xs:documentation>
+									</xs:annotation>
+								</xs:attribute>
+								<xs:attribute name="ACCESS" use="optional" default="public">
+									<xs:simpleType>
+										<xs:restriction base="xs:string">
+											<xs:enumeration value="public"/>
+											<xs:enumeration value="restricted"/>
+											<xs:enumeration value="hidden"/>
+										</xs:restriction>
+									</xs:simpleType>
+								</xs:attribute>
+								<xs:attribute name="FREQUENCY" use="optional" default="daily">
+									<xs:simpleType>
+										<xs:restriction base="xs:string">
+											<xs:enumeration value="daily"/>
+											<xs:enumeration value="monthly"/>
+											<xs:enumeration value="yearly"/>
+											<xs:enumeration value="none"/>
+										</xs:restriction>
+									</xs:simpleType>
+								</xs:attribute>
+								<xs:attribute name="TIME_MARGIN" type="xs:long" use="optional" default="0"/>
+								<xs:attribute name="DIF_ENTRY_ID" type="xs:string" use="optional" default=""/>
+								<xs:attribute name="PUBLISH_WHOM" type="xs:boolean" use="optional" default="false"/>
+								<xs:attribute name="PUBLISH_ECHO" type="xs:boolean" use="optional" default="false"/>
+								<xs:attribute name="PUBLISH_ECHO_OPENDAP" type="xs:boolean" use="optional"/>
+								<xs:attribute name="PUBLISH_CMR_OPENDAP" type="xs:boolean" use="optional"/>
+								<xs:attribute name="OPENDAP_URL_PREFIX" type="xs:string" use="optional"/>
+								<xs:attribute name="OPENDAP_URL_SUFFIX" type="xs:string" use="optional"/>
+								<xs:attribute name="OPENDAP_RESOURCE_URL_SUFFIX" type="xs:string" use="optional"/>
+								<xs:attribute name="PUBLISH_CMR" type="xs:boolean" use="optional" default="true"/>
+								<xs:attribute name="PUBLISH_MIRADOR" type="xs:boolean" use="optional" default="false"/>
+								<xs:attribute name="PUBLISH_GIOVANNI" type="xs:boolean" use="optional" default="false"/>
+								<xs:attribute name="EXPIRY" use="optional">
+									<xs:simpleType>
+										<xs:restriction base="xs:string">
+											<xs:pattern value="\+?[1-9][0-9]*"/>
+										</xs:restriction>
+									</xs:simpleType>
+								</xs:attribute>
+								<xs:attribute name="DOC" type="xs:string" use="optional"/>
+								<xs:attribute name="WITH_HDF4MAP" type="xs:boolean" use="optional" default="false"/>
+								<xs:attribute name="REPLICATE" type="xs:boolean" use="optional" default="false"/>
+								<xs:attribute name="MULTIPLE_REPLACEMENT" use="optional">
+									<xs:annotation>
+										<xs:documentation>Default action when the incoming granule trigger multiple deletion.</xs:documentation>
+									</xs:annotation>
+									<xs:simpleType>
+										<xs:restriction base="xs:string">
+											<xs:enumeration value="STORE"/>
+											<xs:enumeration value="SKIP"/>
+											<xs:enumeration value=""/>
+										</xs:restriction>
+									</xs:simpleType>
+								</xs:attribute>
+							</xs:complexType>
+						</xs:element>
+					</xs:sequence>
+					<xs:attribute name="NAME" use="required">
+						<xs:annotation>
+							<xs:documentation>Dataset name. Must be alpha-numerical.</xs:documentation>
+						</xs:annotation>
+						<xs:simpleType>
+							<xs:restriction base="xs:string">
+								<xs:pattern value="([a-z]|[A-Z]|[0-9]|_|-){1,30}"/>
+							</xs:restriction>
+						</xs:simpleType>
+					</xs:attribute>
+					<xs:attribute name="GROUP" use="optional">
+						<xs:annotation>
+							<xs:documentation>Data group name. Must be alpha-numerical.</xs:documentation>
+						</xs:annotation>
+						<xs:simpleType>
+							<xs:restriction base="xs:string">
+								<xs:pattern value="([a-z]|[A-Z]|[0-9]|_)+"/>
+							</xs:restriction>
+						</xs:simpleType>
+					</xs:attribute>
+					<xs:attribute name="COLLECTION_SHORTNAME" type="xs:string" use="optional">
+						<xs:annotation>
+							<xs:documentation>CMR collection shortname. Need to be specified if CMR collection metadata has a different shortname.</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+					<xs:attribute name="ACCESS" use="optional" default="public">
+						<xs:annotation>
+							<xs:documentation>Boolean (true or false) flag to indicate whether the dataset access needs to be restricted.</xs:documentation>
+						</xs:annotation>
+						<xs:simpleType>
+							<xs:restriction base="xs:string">
+								<xs:enumeration value="public"/>
+								<xs:enumeration value="restricted"/>
+								<xs:enumeration value="hidden"/>
+							</xs:restriction>
+						</xs:simpleType>
+					</xs:attribute>
+					<xs:attribute name="FREQUENCY" use="optional" default="daily">
+						<xs:annotation>
+							<xs:documentation>Temporal frequency of the dataset.</xs:documentation>
+						</xs:annotation>
+						<xs:simpleType>
+							<xs:restriction base="xs:string">
+								<xs:enumeration value="yearly"/>
+								<xs:enumeration value="monthly"/>
+								<xs:enumeration value="daily"/>
+								<xs:enumeration value="none"/>
+							</xs:restriction>
+						</xs:simpleType>
+					</xs:attribute>
+					<xs:attribute name="TIME_MARGIN" type="xs:long" use="optional" default="0">
+						<xs:annotation>
+							<xs:documentation>Time margin in seconds for detecting replacement granules. If an existing granule's begin date time is within this margin, existing granule will be deleted.</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+					<xs:attribute name="DIF_ENTRY_ID" type="xs:string" use="optional"/>
+					<xs:attribute name="PUBLISH_WHOM" type="xs:boolean" use="optional" default="false"/>
+					<xs:attribute name="PUBLISH_ECHO" type="xs:boolean" use="optional" default="false"/>
+					<xs:attribute name="PUBLISH_ECHO_OPENDAP" type="xs:boolean" use="optional"/>
+					<xs:attribute name="PUBLISH_CMR_OPENDAP" type="xs:boolean" use="optional"/>
+					<xs:attribute name="OPENDAP_URL_PREFIX" type="xs:string" use="optional"/>
+					<xs:attribute name="OPENDAP_URL_SUFFIX" type="xs:string" use="optional"/>
+					<xs:attribute name="OPENDAP_RESOURCE_URL_SUFFIX" type="xs:string" use="optional"/>
+					<xs:attribute name="PUBLISH_CMR" type="xs:boolean" use="optional" default="true"/>
+					<xs:attribute name="PUBLISH_MIRADOR" type="xs:boolean" use="optional" default="false"/>
+					<xs:attribute name="PUBLISH_GIOVANNI" type="xs:boolean" use="optional" default="false"/>
+					<xs:attribute name="EXPIRY" use="optional">
+						<xs:simpleType>
+							<xs:restriction base="xs:string">
+								<xs:pattern value="\+?[1-9][0-9]*"/>
+							</xs:restriction>
+						</xs:simpleType>
+					</xs:attribute>
+					<xs:attribute name="DOC" type="xs:string" use="optional"/>
+					<xs:attribute name="WITH_HDF4MAP" type="xs:boolean" use="optional" default="false"/>
+					<xs:attribute name="REPLICATE" type="xs:boolean" use="optional" default="false"/>
+					<xs:attribute name="MULTIPLE_REPLACEMENT" use="optional">
+						<xs:annotation>
+							<xs:documentation>Default action when the incoming granule trigger multiple deletion.</xs:documentation>
+						</xs:annotation>
+						<xs:simpleType>
+							<xs:restriction base="xs:string">
+								<xs:enumeration value="STORE"/>
+								<xs:enumeration value="SKIP"/>
+								<xs:enumeration value=""/>
+							</xs:restriction>
+						</xs:simpleType>
+					</xs:attribute>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+		<xs:attribute name="NAME" use="required">
+			<xs:annotation>
+				<xs:documentation>Name of the data class (logical grouping of datasets internal to S4PA).</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:pattern value="([a-z]|[A-Z]|[0-9]|_)+"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="GROUP" use="required">
+			<xs:annotation>
+				<xs:documentation>Name of the data group (logical grouping of datasets from data user's perspective).</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:pattern value="([a-z]|[A-Z]|[0-9]|_)+"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="FREQUENCY" use="optional" default="daily">
+			<xs:annotation>
+				<xs:documentation>Temporal frequency of datasets.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="yearly"/>
+					<xs:enumeration value="monthly"/>
+					<xs:enumeration value="daily"/>
+					<xs:enumeration value="none"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="ACCESS" use="optional" default="public">
+			<xs:annotation>
+				<xs:documentation>Boolean (true or false) flag to indicate whether all dataset access for the data class needs to be restricted.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="public"/>
+					<xs:enumeration value="restricted"/>
+					<xs:enumeration value="hidden"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="TIME_MARGIN" type="xs:long" use="optional">
+			<xs:annotation>
+				<xs:documentation>Time margin in seconds for detecting replacement granules. If an existing granule's begin date time is within this margin, existing granule will be deleted.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="PUBLISH_WHOM" type="xs:boolean" use="optional" default="false"/>
+		<xs:attribute name="PUBLISH_ECHO" type="xs:boolean" use="optional" default="false"/>
+		<xs:attribute name="PUBLISH_ECHO_OPENDAP" type="xs:boolean" use="optional"/>
+		<xs:attribute name="PUBLISH_CMR_OPENDAP" type="xs:boolean" use="optional"/>
+		<xs:attribute name="OPENDAP_URL_PREFIX" type="xs:string" use="optional"/>
+		<xs:attribute name="OPENDAP_URL_SUFFIX" type="xs:string" use="optional"/>
+		<xs:attribute name="OPENDAP_RESOURCE_URL_SUFFIX" type="xs:string" use="optional"/>
+		<xs:attribute name="PUBLISH_CMR" type="xs:boolean" use="optional" default="true"/>
+		<xs:attribute name="PUBLISH_MIRADOR" type="xs:boolean" use="optional" default="false"/>
+		<xs:attribute name="PUBLISH_GIOVANNI" type="xs:boolean" use="optional" default="false"/>
+		<xs:attribute name="EXPIRY" use="optional">
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:pattern value="\+?[1-9][0-9]*"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="DOC" type="xs:string" use="optional"/>
+		<xs:attribute name="WITH_HDF4MAP" type="xs:boolean" use="optional" default="false"/>
+		<xs:attribute name="REPLICATE" type="xs:boolean" use="optional" default="false"/>
+		<xs:attribute name="MULTIPLE_REPLACEMENT" use="optional">
+			<xs:annotation>
+				<xs:documentation>Default action when the incoming granule trigger multiple deletion.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="STORE"/>
+					<xs:enumeration value="SKIP"/>
+					<xs:enumeration value=""/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:complexType name="providerType">
+		<xs:sequence>
+			<xs:element name="activeFileSystem">
+				<xs:annotation>
+					<xs:documentation>The active file system (directory name) for the provider. The specified value is used only with new S4PA instances.</xs:documentation>
+				</xs:annotation>
+				<xs:complexType mixed="true">
+					<xs:attribute name="MAX" type="xs:float" use="required">
+						<xs:annotation>
+							<xs:documentation>Max disk usage. Must be less than 1.0.</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+					<xs:attribute name="FILE_SIZE_MARGIN" type="xs:float" use="required">
+						<xs:annotation>
+							<xs:documentation>Buffer space that needs to be reserved for ingesting a file. This is expressed as a multiple of the file size.</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+					<xs:attribute name="NOTIFY_ON_FULL" type="xs:string" use="optional"/>
+					<xs:attribute name="CONFIGURED_VOLUMES" type="xs:boolean" use="optional" default="false">
+						<xs:annotation>
+							<xs:documentation>Use of configuration files to specify allocated volumes for rolling archive and non-continuous volumes partition.</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+					<xs:attribute name="LOW_VOLUME_THRESHOLD" type="xs:float" use="optional">
+						<xs:annotation>
+							<xs:documentation>Fraction of the configured volume to trigger anomaly when the free space left on the current volume passed this threshold with no more new volume.</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+					<xs:attribute name="RECYCLE_VOLUME_THRESHOLD" type="xs:float" use="optional">
+						<xs:annotation>
+							<xs:documentation>Fraction of the configured space to perform reconcile disk and recycle closed volume when the free space available on the volume passed this threshold. Must be between 0 and 1.</xs:documentation>
+						</xs:annotation>
+					</xs:attribute>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="poller">
+				<xs:annotation>
+					<xs:documentation>Pollers for the data provider</xs:documentation>
+				</xs:annotation>
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="pdrPoller" minOccurs="0">
+							<xs:complexType>
+								<xs:sequence>
+									<xs:element name="pdrFilter" minOccurs="0" maxOccurs="unbounded">
+										<xs:complexType>
+											<xs:simpleContent>
+												<xs:extension base="xs:string">
+													<xs:attribute name="PATTERN" type="xs:string" use="required"/>
+												</xs:extension>
+											</xs:simpleContent>
+										</xs:complexType>
+									</xs:element>
+									<xs:element name="job" maxOccurs="unbounded">
+										<xs:complexType>
+											<xs:complexContent>
+												<xs:extension base="pdrPollerJobType"/>
+											</xs:complexContent>
+										</xs:complexType>
+									</xs:element>
+								</xs:sequence>
+								<xs:attribute name="INTERVAL" type="xs:long" use="optional">
+									<xs:annotation>
+										<xs:documentation>Polling inerval in seconds</xs:documentation>
+									</xs:annotation>
+								</xs:attribute>
+								<xs:attribute name="MAX_THREAD" type="xs:int" use="optional">
+									<xs:annotation>
+										<xs:documentation>Max no. of polling threads</xs:documentation>
+									</xs:annotation>
+								</xs:attribute>
+								<xs:attribute name="MAX_FAILURE" type="xs:int" use="optional">
+									<xs:annotation>
+										<xs:documentation>Max no. of failures allowed</xs:documentation>
+									</xs:annotation>
+								</xs:attribute>
+							</xs:complexType>
+						</xs:element>
+						<xs:element name="dataPoller" minOccurs="0">
+							<xs:complexType>
+								<xs:sequence>
+									<xs:element name="job" type="dataPollerJobType" maxOccurs="unbounded"/>
+								</xs:sequence>
+								<xs:attribute name="INTERVAL" type="xs:long" use="optional">
+									<xs:annotation>
+										<xs:documentation>Polling inerval in seconds</xs:documentation>
+									</xs:annotation>
+								</xs:attribute>
+								<xs:attribute name="MAX_THREAD" type="xs:int" use="optional">
+									<xs:annotation>
+										<xs:documentation>Max no. of polling threads</xs:documentation>
+									</xs:annotation>
+								</xs:attribute>
+								<xs:attribute name="MAX_FAILURE" type="xs:int" use="optional">
+									<xs:annotation>
+										<xs:documentation>Max no. of failures allowed</xs:documentation>
+									</xs:annotation>
+								</xs:attribute>
+							</xs:complexType>
+						</xs:element>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="pan">
+				<xs:annotation>
+					<xs:documentation>PAN destination information</xs:documentation>
+				</xs:annotation>
+				<xs:complexType>
+					<xs:complexContent>
+						<xs:extension base="panType">
+							<xs:attribute name="INTERVAL" type="xs:long"/>
+						</xs:extension>
+					</xs:complexContent>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="dataClass" type="dataclassType" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>Data class (logical grouping of datasets internal to S4PA)</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+		<xs:attribute name="NAME" use="required">
+			<xs:annotation>
+				<xs:documentation>Name of the data provider. Must be alpha-numerical.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:pattern value="([a-z]|[A-Z]|[0-9]|_)+"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:complexType name="methodType">
+		<xs:sequence>
+			<xs:element name="metadata" type="xs:string" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Command to extract metadata. S4PA will append filenames to the argument during command invokation.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="hdf4map" type="xs:string" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Command to create HDF4 map file. S4PA will append filenames to the argument during command invokation. Command should return the generated map file pathname if successful. Default command will be 'h4mapwriter -z hdf_filename.hdf map_filename.map'</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="compression" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Compression command.</xs:documentation>
+				</xs:annotation>
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="command" type="xs:string">
+							<xs:annotation>
+								<xs:documentation>Command</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="tmpfile" type="xs:string">
+							<xs:annotation>
+								<xs:documentation>A string to indicate the output of command. S4PA interpolates the keyword 'INFILE' with the input file name. For ex: 'INFILE.tmp' translates to 'xyz.tmp' if the input filename is 'xyz'.</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="output" type="xs:string">
+							<xs:annotation>
+								<xs:documentation>A string to indicate the desired filename. S4PA interpolates the keyword 'INFILE' with the input file name. For ex: 'INFILE.tmp' translates to 'xyz.tmp' if the input filename is 'xyz'.</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="decompression" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Decompression command.</xs:documentation>
+				</xs:annotation>
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="command" type="xs:string">
+							<xs:annotation>
+								<xs:documentation>Command</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="tmpfile" type="xs:string">
+							<xs:annotation>
+								<xs:documentation>Anonymous Perl subroutine to transform the input file name to the filename of command output.</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="output" type="xs:string">
+							<xs:annotation>
+								<xs:documentation>Anonymous Perl subroutine to transform the input file name to the desired filename.</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="giovanniPreprocess" type="xs:string" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Giovanni pre-processing command.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="panType">
+		<xs:sequence>
+			<xs:element name="local" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Local PAN directory</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="remote" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Remote PAN directories</xs:documentation>
+				</xs:annotation>
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="panFilter" minOccurs="0" maxOccurs="1">
+							<xs:annotation>
+								<xs:documentation>Customized script command for converting PAN/PDRD to other format</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="originating_system" maxOccurs="unbounded">
+							<xs:annotation>
+								<xs:documentation>Originating system (specified in PDR)</xs:documentation>
+							</xs:annotation>
+							<xs:complexType>
+								<xs:attribute name="NAME" type="xs:string" use="required">
+									<xs:annotation>
+										<xs:documentation>Originating system name</xs:documentation>
+									</xs:annotation>
+								</xs:attribute>
+								<xs:attribute name="HOST" type="xs:string" use="optional">
+									<xs:annotation>
+										<xs:documentation>Destination host for PAN.</xs:documentation>
+									</xs:annotation>
+								</xs:attribute>
+								<xs:attribute name="DIR" type="xs:string" use="optional">
+									<xs:annotation>
+										<xs:documentation>Destination directory for PAN.</xs:documentation>
+									</xs:annotation>
+								</xs:attribute>
+								<xs:attribute name="NOTIFY" use="optional">
+									<xs:simpleType>
+										<xs:restriction base="xs:string">
+											<xs:pattern value=".+@.+"/>
+										</xs:restriction>
+									</xs:simpleType>
+								</xs:attribute>
+								<xs:attribute name="PAN_FILTER" type="xs:string" use="optional">
+									<xs:annotation>
+										<xs:documentation>Customized script command for converting PAN/PDRD to other format</xs:documentation>
+									</xs:annotation>
+								</xs:attribute>
+							</xs:complexType>
+						</xs:element>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="s4pa">
+		<xs:annotation>
+			<xs:documentation>Holder of providers</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="root">
+					<xs:annotation>
+						<xs:documentation>Root directory of S4PA stations.</xs:documentation>
+					</xs:annotation>
+					<xs:simpleType>
+						<xs:restriction base="xs:string">
+							<xs:pattern value="\S+"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:element>
+				<xs:element name="storageDir">
+					<xs:annotation>
+						<xs:documentation>Root directory of public view of data in S4PA. It is the parent of "data group" directories.</xs:documentation>
+					</xs:annotation>
+					<xs:simpleType>
+						<xs:restriction base="xs:string">
+							<xs:pattern value="\S+"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:element>
+				<xs:element name="tempDir">
+					<xs:annotation>
+						<xs:documentation>Global directory serves as the root working directory for filters</xs:documentation>
+					</xs:annotation>
+					<xs:simpleType>
+						<xs:restriction base="xs:string">
+							<xs:pattern value="\S+"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:element>
+				<xs:element name="auxiliaryBackUpArea" minOccurs="0">
+					<xs:annotation>
+						<xs:documentation>Root directory to deposit changed files for back-up</xs:documentation>
+					</xs:annotation>
+					<xs:simpleType>
+						<xs:restriction base="xs:string">
+							<xs:pattern value="\S+"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:element>
+				<xs:element name="documentLocation" default="http://discette.gsfc.nasa.gov/uploads/">
+					<xs:annotation>
+						<xs:documentation>URL for storage of README documents for datasets</xs:documentation>
+					</xs:annotation>
+					<xs:simpleType>
+						<xs:restriction base="xs:string">
+							<xs:pattern value="\S+"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:element>
+				<xs:element name="integrityCheckPriority" minOccurs="0">
+					<xs:annotation>
+						<xs:documentation>Program scheduling priority for regular check integrity jobs</xs:documentation>
+					</xs:annotation>
+					<xs:simpleType>
+						<xs:restriction base="xs:string"/>
+					</xs:simpleType>
+				</xs:element>
+				<xs:element name="urlRoot">
+					<xs:annotation>
+						<xs:documentation>Root URLs for accesing data specified as element attributes (FTP and HTTP)</xs:documentation>
+					</xs:annotation>
+					<xs:complexType>
+						<xs:attribute name="FTP" type="xs:string" use="required"/>
+						<xs:attribute name="HTTP" type="xs:string" use="required"/>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="logger">
+					<xs:annotation>
+						<xs:documentation>Information about logging: DIR attributes indicates the directory for storing log files, LEVEL indicates the logging level (DEBUG and INFO)</xs:documentation>
+					</xs:annotation>
+					<xs:complexType>
+						<xs:attribute name="DIR" type="xs:string" use="required"/>
+						<xs:attribute name="LEVEL" use="optional" default="info">
+							<xs:simpleType>
+								<xs:restriction base="xs:string">
+									<xs:enumeration value="info"/>
+									<xs:enumeration value="debug"/>
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:attribute>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="project" minOccurs="0">
+					<xs:annotation>
+						<xs:documentation>Holder of related CVS project information</xs:documentation>
+					</xs:annotation>
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="location" type="xs:string" maxOccurs="unbounded">
+								<xs:annotation>
+									<xs:documentation>Indicates the location of project sandbox</xs:documentation>
+								</xs:annotation>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="protocol" minOccurs="0" maxOccurs="unbounded">
+					<xs:annotation>
+						<xs:documentation>Protocol specified for hosts involved in data transfers.</xs:documentation>
+					</xs:annotation>
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="host" type="xs:string" maxOccurs="unbounded"/>
+						</xs:sequence>
+						<xs:attribute name="NAME" use="required">
+							<xs:simpleType>
+								<xs:restriction base="xs:string">
+									<xs:enumeration value="BBFTP"/>
+									<xs:enumeration value="SFTP"/>
+									<xs:enumeration value="FTP"/>
+									<xs:enumeration value="FILE"/>
+									<xs:enumeration value="HTTP"/>
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:attribute>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="difFetcher" minOccurs="0">
+					<xs:annotation>
+						<xs:documentation>info for DIF fetching via CMR REST</xs:documentation>
+					</xs:annotation>
+					<xs:complexType>
+						<xs:attribute name="ENDPOINT_URI" type="xs:string" use="required"/>
+						<xs:attribute name="TOKEN_URI" type="xs:string" use="optional"/>
+						<xs:attribute name="PROVIDER" type="xs:string" use="optional"/>
+						<xs:attribute name="USERNAME" type="xs:string" use="optional"/>
+						<xs:attribute name="PASSWORD" type="xs:string" use="optional"/>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="reconciliation" minOccurs="0">
+					<xs:annotation>
+						<xs:documentation>Holder of partner data reconciliation information</xs:documentation>
+					</xs:annotation>
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="echo" minOccurs="0">
+								<xs:annotation>
+									<xs:documentation>info for ECHO reconciliation</xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:attribute name="URL" type="xs:string" use="required"/>
+									<xs:attribute name="MAX_GRANULE_COUNT" type="xs:long" use="optional"/>
+									<xs:attribute name="USERNAME" type="xs:string" use="required"/>
+									<xs:attribute name="PASSWORD" type="xs:string" use="required"/>
+									<xs:attribute name="PUSH_USER" type="xs:string" use="required"/>
+									<xs:attribute name="PUSH_PWD" type="xs:string" use="required"/>
+									<xs:attribute name="LOCAL_DIR" type="xs:string" use="optional"/>
+									<xs:attribute name="CHROOT_DIR" type="xs:string" use="optional"/>
+									<xs:attribute name="ENDPOINT_URI" type="xs:string" use="required"/>
+									<xs:attribute name="STAGING_DIR" type="xs:string" use="optional"/>
+									<xs:attribute name="DATA_HOST" type="xs:string" use="optional"/>
+									<xs:attribute name="MIN_INTERVAL" type="xs:long" use="optional"/>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="cmr" minOccurs="0">
+								<xs:annotation>
+									<xs:documentation>info for CMR reconciliation</xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:attribute name="URL" type="xs:string" use="optional"/>
+									<xs:attribute name="MAX_GRANULE_COUNT" type="xs:long" use="optional"/>
+									<xs:attribute name="PUSH_USER" type="xs:string" use="optional"/>
+									<xs:attribute name="PUSH_PWD" type="xs:string" use="optional"/>
+									<xs:attribute name="LOCAL_DIR" type="xs:string" use="optional"/>
+									<xs:attribute name="CHROOT_DIR" type="xs:string" use="optional"/>
+									<xs:attribute name="STAGING_DIR" type="xs:string" use="optional"/>
+									<xs:attribute name="DATA_HOST" type="xs:string" use="optional"/>
+									<xs:attribute name="MIN_INTERVAL" type="xs:long" use="optional"/>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="mirador" minOccurs="0">
+								<xs:annotation>
+									<xs:documentation>info for MIRADOR reconciliation</xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:attribute name="URL" type="xs:string" use="optional"/>
+									<xs:attribute name="MAX_GRANULE_COUNT" type = "xs:long" use="optional"/>
+									<xs:attribute name="PUSH_USER" type="xs:string" use="optional"/>
+									<xs:attribute name="PUSH_PWD" type="xs:string" use="optional"/>
+									<xs:attribute name="LOCAL_DIR" type="xs:string" use="optional"/>
+									<xs:attribute name="CHROOT_DIR" type="xs:string" use="optional"/>
+									<xs:attribute name="ENDPOINT_URI" type="xs:string" use="required"/>
+									<xs:attribute name="STAGING_DIR" type="xs:string" use="optional"/>
+									<xs:attribute name="DATA_HOST" type="xs:string" use="optional"/>
+									<xs:attribute name="MIN_INTERVAL" type="xs:long" use="optional"/>
+									<xs:attribute name="PULL_TIMEOUT" type="xs:long" use="optional"/>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="dotchart" minOccurs="0">
+								<xs:annotation>
+									<xs:documentation>info for DOTCHART reconciliation</xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:attribute name="URL" type="xs:string" use="optional"/>
+									<xs:attribute name="MAX_GRANULE_COUNT" type = "xs:long" use="optional"/>
+									<xs:attribute name="PUSH_USER" type="xs:string" use="optional"/>
+									<xs:attribute name="PUSH_PWD" type="xs:string" use="optional"/>
+									<xs:attribute name="LOCAL_DIR" type="xs:string" use="optional"/>
+									<xs:attribute name="CHROOT_DIR" type="xs:string" use="optional"/>
+									<xs:attribute name="ENDPOINT_URI" type="xs:string" use="required"/>
+									<xs:attribute name="STAGING_DIR" type="xs:string" use="optional"/>
+									<xs:attribute name="DATA_HOST" type="xs:string" use="optional"/>
+									<xs:attribute name="MIN_INTERVAL" type="xs:long" use="optional"/>
+									<xs:attribute name="PULL_TIMEOUT" type="xs:long" use="optional"/>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="giovanni" minOccurs="0">
+								<xs:annotation>
+									<xs:documentation>info for GIOVANNI reconciliation</xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:attribute name="URL" type="xs:string" use="optional"/>
+									<xs:attribute name="MAX_GRANULE_COUNT" type = "xs:long" use="optional"/>
+									<xs:attribute name="PUSH_USER" type="xs:string" use="optional"/>
+									<xs:attribute name="PUSH_PWD" type="xs:string" use="optional"/>
+									<xs:attribute name="LOCAL_DIR" type="xs:string" use="optional"/>
+									<xs:attribute name="CHROOT_DIR" type="xs:string" use="optional"/>
+									<xs:attribute name="ENDPOINT_URI" type="xs:string" use="required"/>
+									<xs:attribute name="STAGING_DIR" type="xs:string" use="optional"/>
+									<xs:attribute name="DATA_HOST" type="xs:string" use="optional"/>
+									<xs:attribute name="MIN_INTERVAL" type="xs:long" use="optional"/>
+									<xs:attribute name="PULL_TIMEOUT" type="xs:long" use="optional"/>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="publication" minOccurs="0">
+					<xs:annotation>
+						<xs:documentation>Holder of metadata publication related information</xs:documentation>
+					</xs:annotation>
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="echo" minOccurs="0">
+								<xs:annotation>
+									<xs:documentation>Info for ECHO publication</xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="granuleInsert">
+											<xs:complexType>
+												<xs:attribute name="DIR" type="xs:string" use="required"/>
+												<xs:attribute name="HOST" type="xs:string" use="optional"/>
+											</xs:complexType>
+										</xs:element>
+										<xs:element name="granuleDelete">
+											<xs:complexType>
+												<xs:attribute name="DIR" type="xs:string" use="required"/>
+												<xs:attribute name="HOST" type="xs:string" use="optional"/>
+											</xs:complexType>
+										</xs:element>
+										<xs:element name="browseInsert" minOccurs="0">
+											<xs:complexType>
+												<xs:attribute name="DIR" type="xs:string" use="required"/>
+												<xs:attribute name="HOST" type="xs:string" use="optional"/>
+											</xs:complexType>
+										</xs:element>
+										<xs:element name="browseDelete" minOccurs="0">
+											<xs:complexType>
+												<xs:attribute name="DIR" type="xs:string" use="required"/>
+												<xs:attribute name="HOST" type="xs:string" use="optional"/>
+											</xs:complexType>
+										</xs:element>
+										<xs:element name="collectionInsert" minOccurs="0">
+											<xs:complexType>
+												<xs:attribute name="DIR" type="xs:string" use="required"/>
+												<xs:attribute name="HOST" type="xs:string" use="optional"/>
+											</xs:complexType>
+										</xs:element>
+									</xs:sequence>
+									<xs:attribute name="HOST" type="xs:string" use="required"/>
+									<xs:attribute name="VERSION" type="xs:string" use="optional" default="9"/>
+									<xs:attribute name="MAX_GRANULE_COUNT" type="xs:long" use="optional" default="1000"/>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="cmr" minOccurs="0">
+								<xs:annotation>
+									<xs:documentation>Info for CMR publication</xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="skipPublication" minOccurs="0" maxOccurs="unbounded">
+											<xs:annotation>
+												<xs:documentation>Granule metadata PSA Name/Value pair to skip publishing if matched</xs:documentation>
+											</xs:annotation>
+											<xs:complexType>
+												<xs:attribute name="PSANAME" type="xs:string" use="required"/>
+												<xs:attribute name="PSAVALUE" type="xs:string" use="required"/>
+											</xs:complexType>
+										</xs:element>
+									</xs:sequence>
+									<xs:attribute name="CMR_ENDPOINT_URI" type="xs:string" use="required"/>
+									<xs:attribute name="CMR_TOKEN_URI" type="xs:string" use="required"/>
+									<xs:attribute name="PROVIDER" type="xs:string" use="required"/>
+									<xs:attribute name="USERNAME" type="xs:string" use="required"/>
+									<xs:attribute name="PASSWORD" type="xs:string" use="required"/>
+									<xs:attribute name="MAX_GRANULE_COUNT" type="xs:long" use="optional" default="1000"/>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="mirador" minOccurs="0">
+								<xs:annotation>
+									<xs:documentation>Info for Mirador publication</xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="granuleInsert">
+											<xs:complexType>
+												<xs:attribute name="DIR" type="xs:string" use="required"/>
+												<xs:attribute name="HOST" type="xs:string" use="optional"/>
+											</xs:complexType>
+										</xs:element>
+										<xs:element name="granuleDelete">
+											<xs:complexType>
+												<xs:attribute name="DIR" type="xs:string" use="required"/>
+												<xs:attribute name="HOST" type="xs:string" use="optional"/>
+											</xs:complexType>
+										</xs:element>
+										<xs:element name="productDocument">
+											<xs:complexType>
+												<xs:attribute name="DIR" type="xs:string" use="required"/>
+												<xs:attribute name="HOST" type="xs:string" use="optional"/>
+												<xs:attribute name="CMS_TEMPLATE" type="xs:string" use="required"/>
+											</xs:complexType>
+										</xs:element>
+										<xs:element name="skipPublication" minOccurs="0" maxOccurs="unbounded">
+											<xs:annotation>
+												<xs:documentation>Granule metadata PSA Name/Value pair to skip publishing if matched</xs:documentation>
+											</xs:annotation>
+											<xs:complexType>
+												<xs:attribute name="PSANAME" type="xs:string" use="required"/>
+												<xs:attribute name="PSAVALUE" type="xs:string" use="required"/>
+											</xs:complexType>
+										</xs:element>
+									</xs:sequence>
+									<xs:attribute name="HOST" type="xs:string" use="required"/>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="giovanni" minOccurs="0">
+								<xs:annotation>
+									<xs:documentation>Info for Giovanni publication</xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="granuleInsert">
+											<xs:complexType>
+												<xs:attribute name="DIR" type="xs:string" use="required"/>
+												<xs:attribute name="HOST" type="xs:string" use="optional"/>
+											</xs:complexType>
+										</xs:element>
+										<xs:element name="granuleDelete">
+											<xs:complexType>
+												<xs:attribute name="DIR" type="xs:string" use="required"/>
+												<xs:attribute name="HOST" type="xs:string" use="optional"/>
+											</xs:complexType>
+										</xs:element>
+									</xs:sequence>
+									<xs:attribute name="HOST" type="xs:string" use="required"/>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="dotChart" minOccurs="0">
+								<xs:annotation>
+									<xs:documentation>Info for DotChart publication</xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="granuleInsert">
+											<xs:complexType>
+												<xs:attribute name="DIR" type="xs:string" use="required"/>
+												<xs:attribute name="HOST" type="xs:string" use="optional"/>
+											</xs:complexType>
+										</xs:element>
+										<xs:element name="granuleDelete">
+											<xs:complexType>
+												<xs:attribute name="DIR" type="xs:string" use="required"/>
+												<xs:attribute name="HOST" type="xs:string" use="optional"/>
+											</xs:complexType>
+										</xs:element>
+										<xs:element name="dbExport" minOccurs="0">
+											<xs:complexType>
+												<xs:attribute name="DIR" type="xs:string" use="required"/>
+												<xs:attribute name="HOST" type="xs:string" use="optional"/>
+												<xs:attribute name="INTERVAL" type="xs:long" use="optional" default="86400"/>
+											</xs:complexType>
+										</xs:element>
+										<xs:element name="collectionInsert" minOccurs="0">
+											<xs:complexType>
+												<xs:attribute name="HOST" type="xs:string" use="optional"/>
+												<xs:attribute name="DIR" type="xs:string" use="required"/>
+											</xs:complexType>
+										</xs:element>
+									</xs:sequence>
+									<xs:attribute name="HOST" type="xs:string" use="required"/>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="user" minOccurs="0">
+								<xs:annotation>
+									<xs:documentation>Info of publication for user</xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="dataset" maxOccurs="unbounded">
+											<xs:complexType>
+												<xs:attribute name="NAME" type="xs:string" use="required"/>
+												<xs:attribute name="VERSION" type="xs:string" use="optional"/>
+												<xs:attribute name="DIR" type="xs:string" use="required">
+													<xs:annotation>
+														<xs:documentation>Staging directory for deletion metadata file</xs:documentation>
+													</xs:annotation>
+												</xs:attribute>
+												<xs:attribute name="BOUNDINGBOX" type="xs:boolean" use="optional" default="false">
+													<xs:annotation>
+														<xs:documentation>Including bounding box lat/lon information in published files</xs:documentation>
+													</xs:annotation>
+												</xs:attribute>
+											</xs:complexType>
+										</xs:element>
+									</xs:sequence>
+									<xs:attribute name="INTERVAL" type="xs:long" use="optional" default="86400">
+										<xs:annotation>
+											<xs:documentation>Publishing interval in seconds for the user</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+									<xs:attribute name="RETENTION_PERIOD" type="xs:long" use="optional" default="604800">
+										<xs:annotation>
+											<xs:documentation>Retention period in seconds for purging published fils</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="subscription" minOccurs="0">
+					<xs:complexType>
+						<xs:attribute name="INTERVAL" type="xs:long" use="required"/>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="deletionDelay" minOccurs="0">
+					<xs:complexType>
+						<xs:attribute name="INTER_VERSION" type="xs:long" use="required"/>
+						<xs:attribute name="INTRA_VERSION" type="xs:long" use="required"/>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="postOffice" minOccurs="0">
+					<xs:complexType>
+						<xs:attribute name="INTERVAL" type="xs:long" use="optional" default="10"/>
+						<xs:attribute name="MAX_JOBS" type="xs:int" use="optional" default="1"/>
+						<xs:attribute name="MAX_ATTEMPT" type="xs:int" use="optional"/>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="houseKeeper" minOccurs="0">
+					<xs:annotation>
+						<xs:documentation>User defined house keeping jobs</xs:documentation>
+					</xs:annotation>
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="zombie" minOccurs="0">
+								<xs:annotation>
+									<xs:documentation>Standard zombie processes monitoring</xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:attribute name="ACTION" type="xs:string" use="optional" default="kill,notify"/>
+									<xs:attribute name="INTERVAL" type="xs:int" use="optional" default="3600"/>
+									<xs:attribute name="NOTIFY" type="xs:string" use="optional"/>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="job" minOccurs="0" maxOccurs="unbounded">
+								<xs:annotation>
+									<xs:documentation>Customized script command</xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:simpleContent>
+										<xs:extension base="xs:string">
+											<xs:attribute name="NAME" type="xs:string" use="required"/>
+											<xs:attribute name="DOWNSTREAM" type="xs:string" use="optional"/>
+										</xs:extension>
+									</xs:simpleContent>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="provider" type="providerType" maxOccurs="unbounded">
+					<xs:annotation>
+						<xs:documentation>Holder of pollers and dataset information.</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="replication" minOccurs="0">
+					<xs:complexType>
+						<xs:attribute name="ROOT" type="xs:string" use="optional"/>
+						<xs:attribute name="ACTIVE_FILE_SYSTEM" type="xs:string" use="required"/>
+						<xs:attribute name="NOTIFY_ON_FULL" type="xs:string" use="optional"/>
+						<xs:attribute name="PDR_LOCATION" type="xs:string" use="required"/>
+						<xs:attribute name="PAN_LOCATION" type="xs:string" use="optional"/>
+						<xs:attribute name="MAX_PDR_SIZE" type="xs:long" use="optional" default="10"/>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+			<xs:attribute name="NAME" use="required">
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:minLength value="1"/>
+						<xs:maxLength value="22"/>
+						<xs:pattern value="([a-z]|[A-Z]|[0-9]|_)+"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:attribute>
+			<xs:attribute name="MULTIUSERID" use="optional">
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:minLength value="1"/>
+						<xs:maxLength value="22"/>
+						<xs:pattern value="([a-z]|[A-Z]|[0-9]|_)+"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:attribute>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>
+

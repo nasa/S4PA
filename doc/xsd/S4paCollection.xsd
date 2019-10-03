@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This schema contains S4PA Collection level, meta-data elements -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+<xs:include schemaLocation="S4paCollectionTypes.xsd"/>
+
+<xs:annotation>
+ <xs:documentation xml:lang="en">
+  S4PA Collection level meta-data schema. This schema is based 
+  on the Directory Interchanged Format (DIF), from the Global 
+  Change Master Directory (GCMD), with revisions to make it
+  more compatible with the ECHO granule meta-data and the ECS
+  DataPool meta-data , used in the S4PA granule level meta-data.
+ </xs:documentation>
+</xs:annotation>
+
+<xs:element name="S4PACollectionMetaDataFile">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+    This is the root element for this schema. it currently contains
+    two elements. Their types are described in S4paCollectionTypes.xsd.
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:sequence>
+   <xs:element ref="CollectionMetaData"/>
+  </xs:sequence>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="CollectionMetaData">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+    Collection level meta-data information. This contains all the major 
+    elements for the collection level schema. It currently includes the 
+    product ShortName, LongName, VersionID, ScienceKeywords, DataCenter,  
+    Summary, Platform, Sensor, TemporalCoverage, SpatialCoverage, 
+    DataResolution and OriginatingCenter. The ShortName+VersionID and 
+    and LongName are equivalent to the DIF Entry_ID and Entry_Title, 
+    respectively.
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:all>
+   <xs:element ref="ShortName"/>
+   <xs:element ref="LongName"/>
+   <xs:element ref="VersionID"/>
+   <xs:element ref="InsertTime"/>
+   <xs:element ref="LastUpdate"/>
+   <xs:element ref="ScienceKeywords"/>
+   <xs:element name="DataCenter" type="xs:string"/>
+   <xs:element name="Summary" type="xs:string"/>
+   <xs:element ref="TemporalCoverage"/>
+   <xs:element ref="SpatialCoverage"/>
+   <xs:element ref="DataResolution"/>
+   <xs:element ref="Platform"/>
+   <xs:element name="OriginatingCenter" type="xs:string"/>
+  </xs:all>
+ </xs:complexType>
+</xs:element>
+
+</xs:schema>

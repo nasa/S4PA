@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This schema contains S4PA Granule level, meta-data elements -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+<xs:include schemaLocation="S4paGranuleTypes.xsd"/>
+
+<xs:annotation>
+ <xs:documentation xml:lang="en">
+  S4PA Granule Meta-Data schema. There has been an attempt to make
+  this meta-data compatible with ECS meta-data. This is an on going
+  process.
+ </xs:documentation>
+</xs:annotation>
+
+<xs:element name="S4PAGranuleMetaDataFile">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+    This is the root element for this schema. it currently contains 
+    nine elements. Their types are described in S4paGranuleTypes.xsd.
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:sequence>
+   <xs:element ref="CollectionMetaData"/>
+   <xs:element ref="DataGranule" minOccurs="0"/>
+   <xs:element ref="RangeDateTime"/>
+   <xs:element ref="SpatialDomainContainer" minOccurs="0"/>
+   <xs:element ref="OrbitCalculatedSpatialDomain" minOccurs="0"/>
+   <xs:element ref="Platform" minOccurs="0" maxOccurs="unbounded"/>
+   <xs:element ref="PSAs" minOccurs="0" maxOccurs="unbounded"/>
+   <xs:element ref="MeasuredParameters" minOccurs="0" maxOccurs="unbounded"/>
+   <xs:element ref="ProducersMetaData" minOccurs="0" />
+   <xs:element ref="ProducersQA" minOccurs="0" />
+  </xs:sequence>
+ </xs:complexType>
+</xs:element>
+
+</xs:schema>

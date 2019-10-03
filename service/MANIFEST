@@ -1,0 +1,5 @@
+Makefile.PL
+MANIFEST
+s4pd
+s4pservices.pl
+s4paservices.cfg

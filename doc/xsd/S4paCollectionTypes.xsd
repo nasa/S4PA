@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This schema is a placeholder for Collection level, S4PA -->
+<!-- meta-data elements  -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+<xs:include schemaLocation="S4paCommonTypes.xsd"/>
+
+<xs:element name="ScienceKeywords">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+     PI specific attribute. Includes, PSAName and PSAValue.
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:sequence>
+   <xs:element ref="ScienceKeyword" maxOccurs="unbounded"/>
+  </xs:sequence>
+ </xs:complexType>
+</xs:element>
+<xs:element name="ScienceKeyword">
+   <xs:simpleType>
+      <xs:restriction base="xs:string">
+         <xs:maxLength value="80"/>
+      </xs:restriction>
+   </xs:simpleType>
+</xs:element>
+
+<xs:element name="Platform">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+    Platform, contains three elements, ShortName and LongName,
+    which describe the platform the instrument was mounted on, and
+    the Instrument container, which contains information on the 
+    instrument that are aboard the Platform. 
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:sequence>
+   <xs:element ref="PlatformShortName"/>
+   <xs:element ref="PlatformLongName"/>
+   <xs:element name="PlatformType" type="xs:string"/>
+   <xs:element ref="Instrument" minOccurs="0" maxOccurs="unbounded"/>
+  </xs:sequence>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="Instrument">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+    Instrument, contains two elements, ShortName and Sensor, which
+    provide a name for the instrument, and a container that provides
+    information in the sensors associated with the instrument.
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:sequence>
+   <xs:element ref="InstrumentShortName"/>
+   <xs:element ref="Sensor"/>
+  </xs:sequence>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="Sensor">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+    Sensor, contains two elements, ShortName and LongName, which
+    describe the instrument used to measure the data. This is usually
+    a satellite instrument for data sets at the Goddard DAAC. 
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:sequence>
+   <xs:element ref="SensorShortName"/>
+   <xs:element ref="SensorLongName"/>
+  </xs:sequence>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="TemporalCoverage">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+    TemporalCoverage, contains two elements, StartDate and StopDate that
+    give the temporal coverage of the data product.
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:sequence>
+   <xs:element name="StartDate" type="xs:date"/>
+   <xs:element name="StopDate" type="xs:date"/>
+  </xs:sequence>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="SpatialCoverage">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+    SpatialCoverage, currently contain four elements which can be used
+    to describe the spatail coverage of the data. These elements are
+    the same as DIF Spatial_Coverage elements, but the names have been
+    changed to element names used in the S4PA granule level meta-data.
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:sequence>
+   <xs:element ref="WestBoundingCoordinate"/>
+   <xs:element ref="NorthBoundingCoordinate"/>
+   <xs:element ref="EastBoundingCoordinate"/>
+   <xs:element ref="SouthBoundingCoordinate"/>
+  </xs:sequence>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="DataResolution">
+ <xs:annotation>
+   <xs:documentation xml:lang="en">
+    DataResolution, contains five elements that can be used to describe
+    the resolution of the data product. These are:
+       Latitude Resolution: the minimum difference between two adjacent
+         latitude values
+       Longitude Resolution: the minimum difference between two adjacent
+         longitude values
+       Altitude Resolution: the minimum distance possible between two
+         adjacent altitude values
+       Depth Resolution: the minimum distance possible between two adjacent
+         depth values
+       Temporal Resolution: the frequency of data sampled
+   </xs:documentation>
+ </xs:annotation>
+ <xs:complexType>
+  <xs:all>
+   <xs:element name="LatitudeResolution" type="xs:string"/>
+   <xs:element name="LongitudeResolution" type="xs:string"/>
+   <xs:element name="AltitudeResolution" type="xs:string"/>
+   <xs:element name="DepthResolution" type="xs:string"/>
+   <xs:element name="TemporalResolution" type="xs:string"/>
+  </xs:all>
+ </xs:complexType>
+</xs:element>
+
+<xs:element name="PlatformLongName">
+  <xs:annotation>
+    <xs:documentation>
+     Platform long name.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:simpleType>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="80"/>
+    </xs:restriction>
+  </xs:simpleType>
+</xs:element>
+
+<xs:element name="SensorLongName">
+  <xs:annotation>
+    <xs:documentation>
+     Sensor long name.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:simpleType>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="80"/>
+    </xs:restriction>
+  </xs:simpleType>
+</xs:element>
+
+<xs:element name="InsertTime">
+  <xs:simpleType>
+    <xs:list>
+     <xs:simpleType>
+      <xs:union memberTypes="xs:date xs:time"/>
+     </xs:simpleType>
+    </xs:list>
+  </xs:simpleType>
+</xs:element>
+
+<xs:element name="LastUpdate">
+  <xs:simpleType>
+    <xs:list>
+     <xs:simpleType>
+      <xs:union memberTypes="xs:date xs:time"/>
+     </xs:simpleType>
+    </xs:list>
+  </xs:simpleType>
+</xs:element>
+
+</xs:schema>
