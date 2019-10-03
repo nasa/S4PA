@@ -14,7 +14,7 @@ To install this module type the following:
    make test
    make install
 
-Disclaimer:We will update the software but not maintain the pull requests.
+Disclaimer: We will update the software but not maintain the pull requests.
 
 COPYRIGHTS
 ==========
