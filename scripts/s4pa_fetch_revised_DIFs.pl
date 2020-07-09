@@ -23,12 +23,11 @@ Edward Seiler, SSAI
 =cut
 
 ###############################################################################
-# $Id: s4pa_fetch_revised_DIFs.pl,v 1.16 2019/05/06 15:48:00 glei Exp $
+# $Id: s4pa_fetch_revised_DIFs.pl,v 1.17 2020/05/21 17:06:39 s4pa Exp $
 # -@@@ S4PA, Version $Name:  $
 ###############################################################################
 
 use strict;
-use lib '/tools/gdaac/TS2/src/s4p';
 use Getopt::Std;
 use LWP::UserAgent;
 use XML::Simple;
@@ -42,10 +41,10 @@ use Sys::Hostname;
 use JSON;
 use File::Basename;
 use Cwd;
-use vars qw($opt_c $opt_u $opt_e $opt_E $opt_h $opt_v);
+use vars qw($opt_c $opt_u $opt_e $opt_E $opt_h $opt_v $opt_l);
 
 # Read and parse command line options
-getopts('c:u:e:E:hv');
+getopts('c:u:e:E:l:hv');
 usage() if $opt_h;
 my $cfg_file = $opt_c || '../s4pa_dif_info.cfg';
 my $verbose = $opt_v;
@@ -62,18 +61,35 @@ my $dif_info_file = "$stationDir/" . basename($cfg_file);
 my $cpt = new Safe 'CFG';
 $cpt->rdo($cfg_file) || S4P::perish( 2, "Unable to read $cfg_file: ($!)" );
 
-my $cmr_username = ( defined $opt_u ) ? $opt_u :
-    $CFG::CMR_USERNAME;
-my $cmr_encrypted_pwd = ( defined $opt_e ) ? $opt_e :
-    $CFG::CMR_PASSWORD;
-my $cmr_decrypted_pwd = Clavis::decrypt( $cmr_encrypted_pwd )
-    if $cmr_encrypted_pwd;
-my $cmrToken = login($cmr_username, $cmr_decrypted_pwd, $CFG::CMR_PROVIDER);
+my ($cmrToken, $errmsg);
+# CMR switch from Earthdata login to Launchpad token for authentication
+if (defined $CFG::LAUNCHPAD_URI) {
+    my $tokenParam = {};
+    $tokenParam->{LP_URI} = (defined $opt_l) ? $opt_l : $CFG::LAUNCHPAD_URI;
+    $tokenParam->{CMR_CERTFILE} = (defined $opt_u) ? $opt_u : $CFG::CMR_CERTFILE;
+    $tokenParam->{CMR_CERTPASS} = (defined $opt_e) ? $opt_e : $CFG::CMR_CERTPASS;
+    ($cmrToken, $errmsg) = S4PA::get_cmr_token($tokenParam);
+    unless (defined $cmrToken) {
+        S4P::perish(3, "$errmsg");
+    }
+# the original token acquiring from CMR/ECHO
+} else {
+    my $tokenParam = {};
+    $tokenParam->{ECHO_URI} = $CFG::CMR_TOKEN_URI;
+    $tokenParam->{CMR_USERNAME} = (defined $opt_u) ? $opt_u : $CFG::CMR_USERNAME; 
+    my $cmr_encrypted_pwd = (defined $opt_e) ? $opt_e : $CFG::CMR_PASSWORD;
+    $tokenParam->{CMR_PASSWORD} = Clavis::decrypt($cmr_encrypted_pwd) if $cmr_encrypted_pwd;
+    $tokenParam->{CMR_PROVIDER} = $CFG::CMR_PROVIDER;
+    ($cmrToken, $errmsg) = S4PA::get_cmr_token($tokenParam);
+    unless (defined $cmrToken) {
+        S4P::perish(3, "$errmsg");
+    }
+}
 
 my $cmr_endpoint_uri = ( defined $opt_E ) ? $opt_E :
     $CFG::CMR_ENDPOINT_URI;
-my $cmr_rest_base_url = $cmr_endpoint_uri . 'search/collections';
-my $ua = LWP::UserAgent->new;
+# my $cmr_rest_base_url = $cmr_endpoint_uri . 'search/collections';
+my $cmr_rest_base_url;
 
 # Read the date of last update for each product from a file.
 # Expect the file to be in the parent directory of the running S4P job
@@ -86,6 +102,7 @@ my $date_of_last_dif_update;
 my ( $day, $month, $year ) = (localtime)[ 3, 4, 5 ];
 my $yyyymmdd_today = sprintf "%04d%02d%02d", $year + 1900, $month + 1, $day;
 
+my $ua = LWP::UserAgent->new;
 my $dataSetIds = {};
 # Process each dataset flagged with collection metadata fetching
 foreach my $dataset ( keys %CFG::cmr_collection_id ) {
@@ -101,14 +118,16 @@ foreach my $dataset ( keys %CFG::cmr_collection_id ) {
         my $collection_version = $CFG::cmr_collection_id{$dataset}{$version}{'version_id'};
         $dataSetIds->{$dataset}{$version}{'short_name'} = $collection_shortname;
         $dataSetIds->{$dataset}{$version}{'version_id'} = $collection_version;
-        my ( $entry_id, $native_id );
+        my ( $entry_id, $native_id, $concept_id, $revision_id );
 
+        $cmr_rest_base_url = $cmr_endpoint_uri . 'search/collections';
         my $partial_dif_url = $cmr_rest_base_url . '.umm-json?provider=' .
             $CFG::CMR_PROVIDER . '&short_name=' . $collection_shortname .
             '&version=' . $collection_version;
 
         # Loop in case there are problems with the network or the remote host
         my $dif;
+        my $collMeta;
         my $partial_dif_req = HTTP::Request->new( 'GET',
                                           $partial_dif_url,
                                           [Echo_Token => $cmrToken]
@@ -162,12 +181,16 @@ foreach my $dataset ( keys %CFG::cmr_collection_id ) {
             foreach my $coll (@{$jsonRef->{'items'}}) {
                 $entry_id = $coll->{'umm'}{'entry-id'};
                 $native_id = $coll->{'meta'}{'native-id'};
+                $concept_id = $coll->{'meta'}{'concept-id'};
+                $revision_id = $coll->{'meta'}{'revision-id'};
                 $Last_DIF_Revision_Date = $coll->{'meta'}{'revision-date'};
             }
 
             if ( defined $entry_id && defined $native_id ) {
                 $dataSetIds->{$dataset}{$version}{'entry_id'} = $entry_id;
                 $dataSetIds->{$dataset}{$version}{'native_id'} = $native_id;
+                $dataSetIds->{$dataset}{$version}{'concept_id'} = $concept_id;
+                $dataSetIds->{$dataset}{$version}{'revision_id'} = $revision_id;
             }
 
             # Determine the date of the last update for the dataset's Entry_ID
@@ -196,14 +219,20 @@ foreach my $dataset ( keys %CFG::cmr_collection_id ) {
                            );
 
                 # Get the entire DIF file contents from GCMD site, as XML text
+                $cmr_rest_base_url = $cmr_endpoint_uri . 'search/collections';
                 my $full_dif_url = $cmr_rest_base_url . '.dif10?provider=' .
                     $CFG::CMR_PROVIDER . '&entry_id=' . $entry_id . '&pretty=true';
+               
+                # $cmr_rest_base_url = $cmr_endpoint_uri . 'search/concepts/';
+                # my $full_dif_url = $cmr_rest_base_url . $concept_id . 
+                #    '.dif10?pretty=true';
 
                 my $full_dif_req = HTTP::Request->new( 'GET',
                                           $full_dif_url,
                                           [Echo_Token => $cmrToken]
                                         );
                 $dif = undef;
+                $collMeta = undef;
 
                 # Pause before fetching again in order to prevent too
                 # many fetches in a short period of time.
@@ -435,45 +464,6 @@ sub write_last_updates {
     close(LASTUPDATE);
 
     return;
-}
-
-sub login {
-
-    my ($username, $pwd, $provider) = @_;
-
-    my $hostname = Sys::Hostname::hostname();
-    my $packed_ip_address = (gethostbyname($hostname))[4];
-    my $ip_address = join('.', unpack('C4', $packed_ip_address));
-
-    my $tokenNode = XML::LibXML::Element->new('token');
-    $tokenNode->appendTextChild('username', $username);
-    $tokenNode->appendTextChild('password', $pwd);
-    $tokenNode->appendTextChild('client_id', 'GES_DISC');
-    $tokenNode->appendTextChild('user_ip_address', $ip_address);
-    $tokenNode->appendTextChild('provider', $provider);
-
-    my $id;
-    my $tokenUrl = $CFG::CMR_TOKEN_URI . 'tokens';
-    my $request = HTTP::Request->new( 'POST',
-                                      $tokenUrl,
-                                      [Content_Type => 'application/xml'],
-                                      $tokenNode->toString() );
-    my $ua = LWP::UserAgent->new;
-    my $response = $ua->request($request);
-    if ($response->is_success) {
-        my $xml = $response->content;
-        my $tokenDom;
-        my $xmlParser = XML::LibXML->new();
-        eval {$tokenDom = $xmlParser->parse_string($xml); };
-        S4P::perish( 2, "Could not parse response from CMR token request:  $@\n" ) if $@;
-        my $tokenDoc = $tokenDom->documentElement();
-        my ($idNode) = $tokenDoc->findnodes('/token/id');
-        $id = $idNode->textContent();
-    } else {
-        S4P::perish( 2, "Could not connect to CMR API for login; check if CMR API is down.\nReason:  $@\n" );
-    }
-
-    return $id;
 }
 
 sub UpdateDifInfoConfig {

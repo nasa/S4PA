@@ -498,6 +498,18 @@
 										</xs:restriction>
 									</xs:simpleType>
 								</xs:attribute>
+								<xs:attribute name="COLLECTION_LINK" use="optional" default="S4PA">
+									<xs:annotation>
+										<xs:documentation>Collection metadata link in granule metadata file.</xs:documentation>
+									</xs:annotation>
+									<xs:simpleType>
+										<xs:restriction base="xs:string">
+											<xs:enumeration value="S4PA"/>
+											<xs:enumeration value="CMR"/>
+											<xs:enumeration value=""/>
+										</xs:restriction>
+									</xs:simpleType>
+								</xs:attribute>
 							</xs:complexType>
 						</xs:element>
 					</xs:sequence>
@@ -589,6 +601,18 @@
 							</xs:restriction>
 						</xs:simpleType>
 					</xs:attribute>
+					<xs:attribute name="COLLECTION_LINK" use="optional" default="S4PA">
+						<xs:annotation>
+							<xs:documentation>Collection metadata link in granule metadata file.</xs:documentation>
+						</xs:annotation>
+						<xs:simpleType>
+							<xs:restriction base="xs:string">
+								<xs:enumeration value="S4PA"/>
+								<xs:enumeration value="CMR"/>
+								<xs:enumeration value=""/>
+							</xs:restriction>
+						</xs:simpleType>
+					</xs:attribute>
 				</xs:complexType>
 			</xs:element>
 		</xs:sequence>
@@ -670,6 +694,18 @@
 				<xs:restriction base="xs:string">
 					<xs:enumeration value="STORE"/>
 					<xs:enumeration value="SKIP"/>
+					<xs:enumeration value=""/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="COLLECTION_LINK" use="optional" default="S4PA">
+			<xs:annotation>
+				<xs:documentation>Collection metadata link in granule metadata file.</xs:documentation>
+			</xs:annotation>
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="S4PA"/>
+					<xs:enumeration value="CMR"/>
 					<xs:enumeration value=""/>
 				</xs:restriction>
 			</xs:simpleType>
@@ -1065,6 +1101,8 @@
 						<xs:attribute name="PROVIDER" type="xs:string" use="optional"/>
 						<xs:attribute name="USERNAME" type="xs:string" use="optional"/>
 						<xs:attribute name="PASSWORD" type="xs:string" use="optional"/>
+						<xs:attribute name="CERT_FILE" type="xs:string" use="optional"/>
+						<xs:attribute name="CERT_PASS" type="xs:string" use="optional"/>
 					</xs:complexType>
 				</xs:element>
 				<xs:element name="reconciliation" minOccurs="0">
@@ -1232,8 +1270,10 @@
 									<xs:attribute name="CMR_ENDPOINT_URI" type="xs:string" use="required"/>
 									<xs:attribute name="CMR_TOKEN_URI" type="xs:string" use="required"/>
 									<xs:attribute name="PROVIDER" type="xs:string" use="required"/>
-									<xs:attribute name="USERNAME" type="xs:string" use="required"/>
-									<xs:attribute name="PASSWORD" type="xs:string" use="required"/>
+									<xs:attribute name="USERNAME" type="xs:string" use="optional"/>
+									<xs:attribute name="PASSWORD" type="xs:string" use="optional"/>
+									<xs:attribute name="CERT_FILE" type="xs:string" use="optional"/>
+									<xs:attribute name="CERT_PASS" type="xs:string" use="optional"/>
 									<xs:attribute name="MAX_GRANULE_COUNT" type="xs:long" use="optional" default="1000"/>
 								</xs:complexType>
 							</xs:element>

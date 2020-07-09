@@ -37,6 +37,12 @@ It should contain hash(s) of %s4pa or %s4pm as the following sample:
 
 [start|stop|status]
 
+=item B<-i>
+
+<list of instance name separated by comma>
+
+Optional on specific instances only. Default to all instances in configuration file.
+
 =back
 
 =head1 AUTHOR
@@ -46,8 +52,8 @@ Guang-Dih Lei
 =cut
 
 ################################################################################
-# $Id: s4pservices.pl,v 1.6 2019/04/08 15:49:40 glei Exp $
-# -@@@ S4PA, Version $Name:  $
+# s4pservices.pl,v 1.6 2019/04/08 15:49:40 glei Exp
+# -@@@ S4PA, Version Release-3_43_7
 ################################################################################
 
 use strict;
@@ -58,11 +64,11 @@ use File::Copy;
 use S4P;
 use S4PA;
 use Getopt::Std;
-use vars qw($opt_f $opt_a);
+use vars qw($opt_f $opt_a $opt_i);
 
 # Expect both configFile (-f) and  action (-a).
-getopts('f:a:r');
-S4P::perish(1, "Usage: $0 -f <configFile> -a <action>\n<action>=start or stop or status")
+getopts('i:f:a:r');
+S4P::perish(1, "Usage: $0 -f <configFile> -a <action> [-i <list_of_instances>]\n<action>=start or stop or status")
     unless ($opt_f && $opt_a);
 my $SKIP_DISABLE = 1;
 
@@ -76,7 +82,14 @@ my %instConf = ReadConf();
 
 # perform startup/shutdown on each instance
 foreach my $group (keys %instConf) {
-    foreach my $instance (keys %{$instConf{$group}}) {
+    my %instances;
+    if ($opt_i) {
+        map {$instances{$_} = '1'} split /,/,$opt_i;
+    } else {
+        map {$instances{$_} = '1'} keys %{$instConf{$group}};
+    }
+    foreach my $instance (keys %instances) {
+        unless (defined($instConf{$group}{$instance}{'rootDir'})) { S4P::logger("INFO","Invalid instance: $instance") ; next ; }
         my $rootDir = $instConf{$group}{$instance}{'rootDir'};
         my $runOnly = $instConf{$group}{$instance}{'startRunOnly'};
 

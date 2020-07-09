@@ -9,7 +9,6 @@ s4pa_recv_data - station script to receive data for S4PA
 s4pa_recv_data.pl
 [B<-f> I<config_file>]
 [B<-p> I<PAN_dir/PDR_dir>]
-[B<-s> I<stationcfg_file>]
 [B<-h>]
 [B<-v>]
 
@@ -49,11 +48,6 @@ Default is ".", which is the
 current job directory.  When this is used, make sure to configure the output
 work order to go to a downstream station.
 
-=item B<-f> I<stationcfg_file>
-
-Receive station's config file.  Default is ../station.cfg.  Usually changed only
-for unit testing.
-
 =item B<-v>
 
 Verbose mode.
@@ -76,7 +70,6 @@ L<S4PA::ReceiveData>
 Christopher Lynnes, NASA/GSFC, Code 902.
 M. Hegde
 
-11/14/06 Randy Barth: EDOS PAN handling added; also -s option.
 01/11/06 A Eudell     Added PAN for compression/decompression errors
 =cut
 
@@ -101,7 +94,7 @@ use S4P::TimeTools;
 use Net::FTP;
 use Safe;
 use Log::Log4perl;
-use vars qw($opt_f $opt_h $opt_p $opt_v $opt_s $cfg_metadata_methods);
+use vars qw($opt_f $opt_h $opt_p $opt_v $cfg_metadata_methods);
 
 
 # Parse command-line for PAN directory, config file
@@ -109,7 +102,6 @@ getopts('f:hp:s:v');
 usage() if $opt_h;
 my $pan_dir = $opt_p || '.';
 my $cfg_file = $opt_f || '../../s4pa_recv_data.cfg';
-my $stationcfg = $opt_s || '../station.cfg';
 my $pdr_file = shift(@ARGV) or usage();
 my $job_id = basename($pdr_file);
 $job_id =~ s/^DO\.//;
@@ -206,12 +198,24 @@ my $pan_filter = ( exists $CFG::cfg_pan_destination{$orig_system}->{panFilter} )
                  ? $CFG::cfg_pan_destination{$orig_system}->{panFilter}
                  : undef;
 
-# Read station configuration to figure out the support for datasets.
-my $stationCpt = new Safe "STATION";
-$stationCpt->share( '%cfg_downstream', '$cfg_root' );
-$stationCpt->rdo( $stationcfg ) or
-    S4P::perish( 4, "Cannot read station config file $stationcfg" );
-my $postOfficeDir = "$STATION::cfg_root/postoffice";
+# Read dif_fetching configuration to get collection info.
+my $difCfg = "$CFG::cfg_root/other/dif_fetcher/s4pa_dif_info.cfg";
+my $difCpt = new Safe "DIF";
+if (-f $difCfg) {
+    $difCpt->rdo($difCfg) or S4P::perish(4, "Cannot read station config file $difCfg");
+}
+
+# Get postoffice station for PAN
+my $postOfficeDir = "$CFG::cfg_root/postoffice";
+unless (-d $postOfficeDir) {
+    # reading station.cfg was removed since 3.43.8, to make it backward compatible,
+    # reading station root directory from station.cfg file at the station.
+    my $stationcfg = '../station.cfg';
+    my $stationCpt = new Safe "STATION";
+    $stationCpt->rdo($stationcfg) or
+        S4P::perish( 4, "Cannot read station config file $stationcfg" );
+    $postOfficeDir = "$STATION::cfg_root/postoffice";
+}
 S4P::perish( 4, "PostOffice directory, $postOfficeDir, doesn't exist" )
     unless ( -d $postOfficeDir );
 
@@ -333,9 +337,9 @@ FILE_GROUP: foreach my $fileGroup ( @{$outPdr->file_groups} ) {
     my $dataVersion = $fileGroup->data_version;
     my $metFile = $fileGroup->met_file() ? $fileGroup->met_file() : undef;
     my $browseFile = $fileGroup->browse_file()
-	? $fileGroup->browse_file() : undef;
+    ? $fileGroup->browse_file() : undef;
     my $mapFile = $fileGroup->map_file()
-	? $fileGroup->map_file() : undef;
+    ? $fileGroup->map_file() : undef;
     my @dataFileList = $fileGroup->data_files();
     my $fileGroupError = undef;
     # A hash to remember file mappings: input file is the key and output file
@@ -350,14 +354,14 @@ FILE_GROUP: foreach my $fileGroup ( @{$outPdr->file_groups} ) {
             S4P::logger( "ERROR", $message );
             $logger->error( $message ) if defined $logger;
             $fileGroup->status( 'FAILURE' );
-	    $fileGroupError = "METADATA PREPROCESSING ERROR";
+            $fileGroupError = "METADATA PREPROCESSING ERROR";
             last FILE_LIST;
         }
     }
 
     # Try uncompressing if configured
     if ( ( $fileGroup->status() eq 'SUCCESSFUL' )
-	&& defined $CFG::cfg_uncompress{$dataset} ) {
+        && defined $CFG::cfg_uncompress{$dataset} ) {
         # For each file in the file group except for metadata files,
         # uncompress, recalculate size and filename.
         UNCOMPRESS: foreach my $file_spec ( @{$fileGroup->file_specs} ) {
@@ -377,7 +381,7 @@ FILE_GROUP: foreach my $fileGroup ( @{$outPdr->file_groups} ) {
                 $message = "Failed to decompress $old_file";
                 S4P::logger( "ERROR", $message );
                 $logger->error( $message ) if defined $logger;
-		$fileGroupError = "DATA CONVERSION ERROR";
+                $fileGroupError = "DATA CONVERSION ERROR";
                 $file_spec->status( $fileGroupError );
                 $fileGroup->status( 'FAILURE' );
                 last UNCOMPRESS;
@@ -387,7 +391,7 @@ FILE_GROUP: foreach my $fileGroup ( @{$outPdr->file_groups} ) {
     
     # Try extracting metadata if configured
     if ( ( $fileGroup->status() eq 'SUCCESSFUL' ) && 
-	defined $CFG::cfg_metadata_methods{$dataset} ) {
+        defined $CFG::cfg_metadata_methods{$dataset} ) {
         # Get data files again as they may have been uncompressed by S4PA 
         @dataFileList = $fileGroup->data_files();
         S4P::logger( 'INFO',
@@ -403,7 +407,7 @@ FILE_GROUP: foreach my $fileGroup ( @{$outPdr->file_groups} ) {
             S4P::logger( "ERROR", "Metadata extraction failed" );
             $logger->error( "Failed to extract metadata for "
                 . join( ',', @dataFileList ) ) if defined $logger;
-	    $fileGroupError = "METADATA PREPROCESSING ERROR";
+            $fileGroupError = "METADATA PREPROCESSING ERROR";
             $fileGroup->status( 'FAILURE' );
         } else {
             $logger->info( "Extracted metadata for " 
@@ -421,12 +425,12 @@ FILE_GROUP: foreach my $fileGroup ( @{$outPdr->file_groups} ) {
                 unless ( S4P::write_file( $metFile, $xml ) ) {
                     S4P::logger( "ERROR",
                         "Failed to write metadata to $metFile" );
-		    $fileGroupError = "METADATA PREPROCESSING ERROR";
+	                  $fileGroupError = "METADATA PREPROCESSING ERROR";
                     $fileGroup->status( 'FAILURE' );
                 }
             } else {
                 S4P::logger( 'ERROR', "Failed to generate metadata" );
-		$fileGroupError = "METADATA PREPROCESSING ERROR";
+                $fileGroupError = "METADATA PREPROCESSING ERROR";
                 $fileGroup->status( 'FAILURE' );
             }
         }
@@ -488,7 +492,7 @@ FILE_GROUP: foreach my $fileGroup ( @{$outPdr->file_groups} ) {
 
     # Try compressing data if configured.
     if ( ( $fileGroup->status() eq 'SUCCESSFUL' ) &&
-	defined $CFG::cfg_compress{$dataset} ) {
+        defined $CFG::cfg_compress{$dataset} ) {
         # For each file in the file group except for metadata files,
         # compress and recalculate checksum, size and filename.
         COMPRESS: foreach my $file_spec ( @{$fileGroup->file_specs} ) {
@@ -512,8 +516,8 @@ FILE_GROUP: foreach my $fileGroup ( @{$outPdr->file_groups} ) {
                 $message = "Failed to compress $old_file";
                 S4P::logger( "ERROR", $message );
                 $logger->error( $message ) if defined $logger;
-		$fileGroupError = "DATA CONVERSION ERROR";
-		$file_spec->status( $fileGroupError );
+                $fileGroupError = "DATA CONVERSION ERROR";
+                $file_spec->status( $fileGroupError );
                 $fileGroup->status( 'FAILURE' );
                 last COMPRESS;
             }
@@ -522,13 +526,13 @@ FILE_GROUP: foreach my $fileGroup ( @{$outPdr->file_groups} ) {
 
     # Update the metadata; on failure to do so, fail the file group.
     if ( $fileGroup->status() eq 'SUCCESSFUL' ) {
-	unless ( S4PA::Receiving::UpdateMetadata( $fileGroup, $fileMap ) ) {
-	    $fileGroupError = "METADATA PREPROCESSING ERROR";
-	    $fileGroup->status( 'FAILURE' );
-	    foreach my $fileSpec ( @{$fileGroup->file_specs} ) {
-		$fileSpec->status( $fileGroupError );
-	    }
-	}
+        unless ( S4PA::Receiving::UpdateMetadata( $fileGroup, $fileMap ) ) {
+            $fileGroupError = "METADATA PREPROCESSING ERROR";
+            $fileGroup->status( 'FAILURE' );
+            foreach my $fileSpec ( @{$fileGroup->file_specs} ) {
+                $fileSpec->status( $fileGroupError );
+            }
+        }
     }
 
     # If the file group has been successfully processed, continue to the next.

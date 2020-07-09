@@ -75,7 +75,7 @@ ADNET, Code 610.2, Greenbelt, MD  20771
 =cut
 
 ################################################################################
-# $Id: s4pa_recon.pl,v 1.55 2018/05/21 19:09:19 glei Exp $
+# $Id: s4pa_recon.pl,v 1.57 2020/06/23 12:34:28 s4pa Exp $
 # -@@@ S4PA, Version $Name:  $
 ################################################################################
 
@@ -85,6 +85,7 @@ use Safe;
 use S4P;
 use S4P::PDR;
 use S4P::TimeTools;
+use S4PA;
 use S4PA::Reconciliation;
 use S4PA::Storage;
 use S4PA::Metadata;
@@ -150,6 +151,9 @@ my $local_hostname_override = ( defined $opt_l ) ? $opt_l :
 my $ignore_file_list = ( defined $opt_a ) ? $opt_a : $CFG::cfg_ignore_file_list;
 my $debug = ( defined $opt_d ) ? $opt_d : $CFG::cfg_debug;
 my $ftp_pull_timeout = ( defined $opt_w ) ? $opt_w : $CFG::cfg_ftp_pull_timeout;
+my $cmr_certfile = $CFG::CMR_CERTFILE;
+my $cmr_passfile = $CFG::CMR_CERTPASS;
+my $launchpad_uri = $CFG::LAUNCHPAD_URI;
 
 # Minimum number of seconds that must elapse before a
 # newly ingested granule is republished.
@@ -219,7 +223,7 @@ my $usage =
 # Removed requirement for ftp_push options.
 # We will be doing ftp_pull for dotchart and mirador reconciliation.
 unless ( $partner && $s4pa_shortName && defined( $s4pa_versionId ) &&
-         $s4pa_root && $service_endpoint_uri && $s4pa_instance_name &&
+         $s4pa_root && ($service_endpoint_uri or $launchpad_uri) && $s4pa_instance_name &&
          $deletion_xml_staging_dir ) {
     print STDERR $usage;
     exit 1;
@@ -301,6 +305,10 @@ if ( defined $ignore_file_list && -s $ignore_file_list ) {
 my $partner_service_pwd = Clavis::decrypt( $partner_service_encrypted_pwd )
     if $partner_service_encrypted_pwd;
 
+# updated LWP::UserAgent under C7 change this default to 1 causing Dotchart recon to fail
+# # so, explicit set it not to verify hostname for backward compatability.
+$ENV{PERL_LWP_SSL_VERIFY_HOSTNAME} = 0;
+
 my $recon = recon_object( $partner, $s4pa_root, $large_count_threshold,
                           $ftp_push_host, $ftp_push_user, $ftp_push_pwd,
                           $ftp_push_dir, $ftp_push_quiescent_time,
@@ -309,7 +317,8 @@ my $recon = recon_object( $partner, $s4pa_root, $large_count_threshold,
                           $service_timeout, $partner_service_username,
                           $partner_service_pwd, $partner_service_provider_id,
                           $local_hostname_override, $ftp_pull_timeout,
-                          $partner_protocol);
+                          $partner_protocol, $cmr_certfile, $cmr_passfile,
+                          $launchpad_uri);
 
 my $ds_name_width = length( $s4pa_shortName ) + 6;
 
@@ -520,7 +529,10 @@ if ( $matches && @missing_s4pa_granules ) {
                              $partner_service_pwd,
                              $partner_service_provider_id,
                              $service_endpoint_uri, $catalog_endpoint_uri,
-                             $partner_protocol );
+                             $partner_protocol,
+                             $cmr_certfile,
+                             $cmr_passfile,
+                             $launchpad_uri );
     $missing_message = "Delete $missing_s4pa granules for" .
         " shortName $s4pa_shortName, version $partner_versionId" .
         " to partner $partner";
@@ -672,7 +684,8 @@ sub recon_object {
          $service_endpoint_uri,
          $service_timeout, $partner_service_username,
          $partner_service_pwd, $partner_service_provider_id,
-         $local_hostname_override, $ftp_pull_timeout, $partner_protocol) = @_;
+         $local_hostname_override, $ftp_pull_timeout, $partner_protocol,
+         $cmr_certfile, $cmr_passfile, $launchpad_uri) = @_;
 
     my $robj;
     my $local_push_dir = ($ftp_server_chroot) ? "$ftp_server_chroot/$ftp_push_dir"
@@ -697,7 +710,28 @@ sub recon_object {
                             PROVIDER              => $partner_service_provider_id,
                                                );
     } elsif ( $partner eq 'CMR' ) {
-        $robj = S4PA::Reconciliation::CMR->new(
+        # for Launchpad token
+        if (defined $launchpad_uri) {
+            $robj = S4PA::Reconciliation::CMR->new(
+                            FTP_PUSH_HOST         => $ftp_push_host,
+                            FTP_PUSH_USER         => $ftp_push_user,
+                            FTP_PUSH_PWD          => $ftp_push_pwd,
+                            FTP_PUSH_DIR          => $ftp_push_dir,
+                            FTP_PUSH_QUIESCENT_TIME => $ftp_push_quiescent_time,
+                            TEMP_DIR              => $temp_dir,
+                            LOCAL_PUSH_DIR        => $local_push_dir,
+                            LARGE_COUNT_THRESHOLD => $large_count_threshold,
+                            ENDPOINT_ROOT         => $launchpad_uri,
+                            CATALOG_ENDPOINT_ROOT => $catalog_endpoint_uri,
+                            SERVICE_TIMEOUT       => $service_timeout,
+                            LOCAL_HOST_NAME       => $local_hostname_override,
+                            CERTFILE              => $cmr_certfile,
+                            CERTPASS              => $cmr_passfile,
+                            PROVIDER              => $partner_service_provider_id,
+                                               );
+        # for ECHO token
+        } else {
+            $robj = S4PA::Reconciliation::CMR->new(
                             FTP_PUSH_HOST         => $ftp_push_host,
                             FTP_PUSH_USER         => $ftp_push_user,
                             FTP_PUSH_PWD          => $ftp_push_pwd,
@@ -714,6 +748,7 @@ sub recon_object {
                             PASSWORD              => $partner_service_pwd,
                             PROVIDER              => $partner_service_provider_id,
                                                );
+        }
     } elsif ( $partner eq 'Mirador' ) {
         $robj = S4PA::Reconciliation::Mirador->new(
                             FTP_PUSH_HOST         => $ftp_push_host,
@@ -1150,16 +1185,54 @@ sub create_rest_wo {
         $partner_service_provider_id,
         $service_endpoint_uri,
         $catalog_endpoint_uri,
-        $granules) = @_;
-
-    my $echoToken = login($partner_service_username, $partner_service_pwd,
-                          $partner_service_provider_id, $service_endpoint_uri);
+        $granules,
+        $cmr_certfile,
+        $cmr_passfile,
+        $launchpad_uri) = @_;
+ 
+    my ($cmrToken, $errmsg);
+    # CMR switch from Earthdata login to Launchpad token for authentication
+    if (defined $launchpad_uri) {
+        my $tokenParam = {};
+        $tokenParam->{LP_URI} = $launchpad_uri;
+        $tokenParam->{CMR_CERTFILE} = $cmr_certfile;
+        $tokenParam->{CMR_CERTPASS} = $cmr_passfile;
+        ($cmrToken, $errmsg) = S4PA::get_cmr_token($tokenParam);
+        unless (defined $cmrToken) {
+            S4P::perish(3, "$errmsg");
+        }
+    # the original token acquiring from CMR/ECHO
+    } else {
+        my $tokenParam = {};
+        $tokenParam->{ECHO_URI} = $service_endpoint_uri;
+        $tokenParam->{CMR_USERNAME} = $partner_service_username;
+        $tokenParam->{CMR_PASSWORD} = $partner_service_pwd;
+        $tokenParam->{CMR_PROVIDER} = $partner_service_provider_id;
+        ($cmrToken, $errmsg) = S4PA::get_cmr_token($tokenParam);
+        unless (defined $cmrToken) {
+            S4P::perish(3, "$errmsg");
+        }
+    }
 
     # Write a work order to submit a REST request
     my $parser = XML::LibXML->new();
     my $woDom = $parser->parse_string('<RestPackets/>');
     my $woDoc = $woDom->documentElement();
     $woDoc->setAttribute('status', "I");
+
+    # move http request header outside each packet
+    if ($cmrToken) {
+        my $headerNode = XML::LibXML::Element->new('HTTPheader');
+        $headerNode->appendText("Echo-Token: $cmrToken");
+        $woDoc->appendChild($headerNode);
+    }
+    my $headerNode = XML::LibXML::Element->new('HTTPheader');
+    if ($CFG::CMR_ENDPOINT_URI =~ /cmr/i) {
+        $headerNode->appendText("Content-Type: application/echo10+xml");
+    } else {
+        $headerNode->appendText("Content-Type: application/xml");
+    }
+    $woDoc->appendChild($headerNode);
 
     my $destinationBase = $catalog_endpoint_uri . 'providers/' .
                           $partner_service_provider_id . '/granules/';
@@ -1171,12 +1244,6 @@ sub create_rest_wo {
         $restPacketNode->setAttribute('status', "I");
         my $destination = $destinationBase . $granuleUR;
         $restPacketNode->setAttribute('destination', $destination);
-        if ($echoToken) {
-            my $headerNode = XML::LibXML::Element->new('HTTPheader');
-            $headerNode->appendText("Echo-Token: $echoToken");
-            $restPacketNode->appendChild($headerNode);
-        }
-
         $woDoc->appendChild($restPacketNode);
     }
 
@@ -1277,7 +1344,8 @@ sub delete_partner_granules {
          $partner_ftp_pub_host, $partner_ftp_del_pub_dir, $partner_urls,
          $partner_service_username, $partner_service_pwd,
          $partner_service_provider_id,
-         $service_endpoint_uri, $catalog_endpoint_uri, $partner_protocol ) = @_;
+         $service_endpoint_uri, $catalog_endpoint_uri, $partner_protocol,
+         $cmr_certfile, $cmr_passfile, $launchpad_uri) = @_;
 
     # Generate one or more xml files for deleting granules in @$extra_granules
     # from the partner because those granules are no longer in the S4PA
@@ -1355,7 +1423,10 @@ sub delete_partner_granules {
                                       $partner_service_provider_id,
                                       $service_endpoint_uri,
                                       $catalog_endpoint_uri,
-                                      $extra_granules );
+                                      $extra_granules,
+                                      $cmr_certfile,
+                                      $cmr_passfile,
+                                      $launchpad_uri )
         } else {
             $status = create_wo( $wo_name, $partner_protocol, $partner_ftp_pub_host,
                 $partner_ftp_del_pub_dir, $xml_paths );
@@ -1579,43 +1650,4 @@ sub giovanni_granule_deletion_files {
     return \@xml_paths;
 }
 
-
-sub login {
-
-    my ($username, $pwd, $provider, $service_endpoint_uri) = @_;
-
-    my $hostname = Sys::Hostname::hostname();
-    my $packed_ip_address = (gethostbyname($hostname))[4];
-    my $ip_address = join('.', unpack('C4', $packed_ip_address));
-
-    my $tokenNode = XML::LibXML::Element->new('token');
-    $tokenNode->appendTextChild('username', $username);
-    $tokenNode->appendTextChild('password', $pwd);
-    $tokenNode->appendTextChild('client_id', 'GESDISC');
-    $tokenNode->appendTextChild('user_ip_address', $ip_address);
-    $tokenNode->appendTextChild('provider', $provider);
-
-    my $id;
-    my $tokenUrl = $service_endpoint_uri . 'tokens';
-    my $request = HTTP::Request->new( 'POST',
-                                      $tokenUrl,
-                                      [Content_Type => 'application/xml'],
-                                      $tokenNode->toString() );
-    my $ua = LWP::UserAgent->new;
-    my $response = $ua->request($request);
-    if ($response->is_success) {
-        my $xml = $response->content;
-        my $tokenDom;
-        my $xmlParser = XML::LibXML->new();
-        eval {$tokenDom = $xmlParser->parse_string($xml); };
-        S4P::perish( 2, "Could not parse response from ECHO token request:  $@\n" ) if $@;
-        my $tokenDoc = $tokenDom->documentElement();
-        my ($idNode) = $tokenDoc->findnodes('/token/id');
-        $id = $idNode->textContent();
-    } else {
-        S4P::perish( 2, "Could not connect to ECHO API for login; check if ECHO API is down.\nReason:  $@\n" );
-    }
-
-    return $id;
-}
 

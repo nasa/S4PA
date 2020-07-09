@@ -54,3 +54,4 @@ s4pa_get_cmr_access.pl
 s4pa_cmr_dataset.pl
 s4pa_recycle_volumes.pl
 s4pa_zombie_monitor.pl
+s4pa_launchpad_token.pl

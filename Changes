@@ -1,3 +1,59 @@
+Rev 3.43.8   May 29, 2020
+
+Features:
+  - Support of CMR authentication transition from Earthdata Login to NASA Launchpad.
+  - Option of switching collection metadata link to CMR in granule metadata file.
+
+Scripts/Modules/Schema
+
+  s4pa_deploy.pl
+    1. Populate COLLECTION_LINK, CERT_FILE, CERT_PASS setting to related station configuration.
+    2. Query CMR for collection concept-id for each collection that require CMR metadata link.
+
+  s4pa_fetch_revised_DIFs.pl
+    1. Collect CMR concept-id and revision-id for each collection.
+    2. Replace local CMR login routine with S4PA::get_cmr_tokek routine.
+
+  s4pa_launchpad_token.pl
+    1. New. Acquire and validate Launchpad token for CMR publication and reconciliation.
+
+  s4pa_publish_cmr.pl
+    1. Replace local CMR login routine with S4PA::get_cmr_tokek routine.
+    2. Move HTTP request header outside each packet node for CMR REST work order.
+    3. Replace obsolete ECHO granule schema link with Earthdata git link.
+
+  s4pa_recon.pl
+    1. Replace local CMR login routine with S4PA::get_cmr_tokek routine.
+    2. Move HTTP request header outside each packet node for CMR REST work order.
+
+  s4pa_recv_data.pl
+    1. Read CMR concept-id configuration and collection metadata link setting,
+
+  s4pa_rest_worker.pl
+    1. Handle new work order format with HTTP request header being outside each packet node.
+    2. validate Launchpad token for CMR REST request.
+
+  s4pservices.pl
+    1. Add option to allow specification of instances to operate on.
+
+  Receiving.pm
+    1. Update UpdateMetadata routine to switch collection link to CMR.
+    2. Confirm CMR concept-id from deployment with concept-id from DIF_Fether.
+
+  Reconciliation.pm
+    1. Add CMR token acquiring from either ECHO REST or Launchpad.
+
+  S4PA.pm
+    1. Add 3 new routines to acquire CMR token either from ECHO REST or Launchpad.
+
+  S4paDescriptor.xsd
+    1. Add COLLECTION_LINK for collection metadata link switch to CMR.
+    2. Add CERT_FLE and CERT_PASS for CMR token transition to Launchpad.
+
+  S4paDIF102HTML.xsl
+    1. Support new collection metadata published from mEditor.
+
+
 Rev 3.43.7   July 26, 2019
 
 Features:
@@ -344,3 +400,11 @@ S4paDescriptor.xsd
     2. Add new 'skipPublication' element with the new 'skipPublicationType' for collection
        specific non-publish granules requirement under dataClass, dataset, and dataVersion.
 
+S4paDIF102HTML.xsl
+
+    1. Update for new JSON raw format of collection metadata published from mEditor.
+
+S4paGran2CMR.xsl
+
+    1. Add OCO3 datasets to publish granule with fixed BoundingRectangle Spatial coordinates.
+ 

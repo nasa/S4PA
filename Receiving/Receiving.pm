@@ -39,6 +39,7 @@ use S4P::FileGroup;
 use S4P::FileSpec;
 use S4P::TimeTools;
 use S4P::Connection;
+use Safe;
 use Net::FTP;
 use Net::Netrc;
 use Cwd;
@@ -1716,7 +1717,7 @@ sub UpdateMetadata
             qq(type="text/xsl" href="$styleSheet") );
     }
     my $supportedVersion =
-	S4PA::Receiving::FindSupportedVersion( $dataset, $versionID );
+    S4PA::Receiving::FindSupportedVersion( $dataset, $versionID );
 
     # If no matching version found, complain and return.
     unless ( defined $supportedVersion ) {
@@ -1727,8 +1728,43 @@ sub UpdateMetadata
     $fileGroup->data_version( $versionID, "%s" );
 
     # Insert URL to collection metadata
-    if ( defined $CFG::cfg_data_to_dif{$shortName}{$supportedVersion}{path}
-        && ( -f $CFG::cfg_data_to_dif{$shortName}{$supportedVersion}{path} ) ) {
+    my $collUrl;
+    if (defined $CFG::cfg_collection_link{$shortName}{$supportedVersion}) {
+        if ($CFG::cfg_collection_link{$shortName}{$supportedVersion} eq 'CMR') {
+            # make sure concept-id from deployment is the same with dif_fetcher
+            my $difUrl;
+            my $difConcept = $DIF::cmr_collection_id{$shortName}{$supportedVersion}{'concept_id'};
+            if (defined $difConcept) {
+                my $uri = $DIF::CMR_ENDPOINT_URI;
+                $uri =~ s/\/+$//;
+                $difUrl = $uri . "/search/concepts/" . $difConcept;
+            }
+            my $cmrUrl = $CFG::cfg_data_to_dif{$shortName}{$supportedVersion}{'cmrUrl'};
+            # Replace local collection metadata file, use CMR's collection metadata link instead
+            if ((defined $difUrl) && (defined $cmrUrl) && ($difUrl eq $cmrUrl)) {
+                $collUrl = $difUrl;
+            } elsif (defined $difUrl) {
+                $collUrl = $difUrl;
+            } elsif (defined $cmrUrl) {
+                $collUrl = $cmrUrl;
+            }
+        } elsif (defined $CFG::cfg_data_to_dif{$shortName}{$supportedVersion}{path}
+            && (-f $CFG::cfg_data_to_dif{$shortName}{$supportedVersion}{path})
+            && ($CFG::cfg_collection_link{$shortName}{$supportedVersion} eq 'S4PA')) {
+            # use relative URL from the URL root, excluding protocol and hostname
+            $CFG::cfg_data_to_dif{$shortName}{$supportedVersion}{url} =~ m#(://([^/]+))?(/.*)$#;
+            $collUrl = $3;
+        }
+    } else {
+        if (defined $CFG::cfg_data_to_dif{$shortName}{$supportedVersion}{path}
+            && (-f $CFG::cfg_data_to_dif{$shortName}{$supportedVersion}{path})) {
+            # use relative URL from the URL root, excluding protocol and hostname
+            $CFG::cfg_data_to_dif{$shortName}{$supportedVersion}{url} =~ m#(://([^/]+))?(/.*)$#;
+            $collUrl = $3;
+        }
+    }
+
+    if (defined $collUrl) {
         my ( $collectionNode )
             = $doc->getElementsByTagName( 'CollectionMetaData' );
         # CollectionMetaData is defined at this point; no need to check for its
@@ -1745,22 +1781,16 @@ sub UpdateMetadata
             $collectionNode->removeChild( $urlNode );
         }
 
-        # use relative URL from the URL root, excluding protocol and hostname
-        $CFG::cfg_data_to_dif{$shortName}{$supportedVersion}{url} =~ m#(://([^/]+))?(/.*)$#;
-        my $url = $3;
-
         $urlNode = XML::LibXML::Element->new( 'URL' );
         $urlNode->setAttribute( "xmlns:xlink",
             "http://www.w3.org/1999/xlink" );
         $urlNode->setAttribute( "xlink:type", "simple" );
-        $urlNode->setAttribute( "xlink:href", $url );
-	#    $CFG::cfg_data_to_dif{$shortName}{$supportedVersion}{url} );
+        $urlNode->setAttribute( "xlink:href", $collUrl );
         $urlNode->setAttribute( "xlink:show", "new" );
         $urlNode->setAttribute( "xlink:actuate", "onRequest" );
         $urlNode->setAttribute( "xlink:title",
             "Click to view $shortName collection");            
-        $urlNode->appendText($url);
-        # $urlNode->appendText( $CFG::cfg_data_to_dif{$shortName}{$supportedVersion}{url} );
+        $urlNode->appendText($collUrl);
         $collectionNode->appendChild( $urlNode );
     }
 

@@ -19,7 +19,7 @@ E. Seiler, ADNET Systems Inc
 =cut
 
 ################################################################################
-# $Id: Reconciliation.pm,v 1.46 2019/03/22 18:49:26 glei Exp $
+# $Id: Reconciliation.pm,v 1.47 2020/05/21 10:59:39 s4pa Exp $
 # -@@@ S4PA, Version: $Name:  $
 ################################################################################
 
@@ -32,12 +32,14 @@ use XML::Twig;
 use Sys::Hostname;
 use Net::FTP;
 use Net::SFTP::Foreign;
+use S4PA;
 use S4PA::Receiving;
 use File::Basename;
 use File::stat;
 use File::Copy;
 use LWP::UserAgent;
 use POSIX;
+use JSON;
 use vars '$AUTOLOAD';
 use vars qw($VERSION);
 
@@ -1297,16 +1299,25 @@ sub _init {
                                              500;
     $self->{client}->{username} = defined $arg{USERNAME} ?
                                   $arg{USERNAME} :
-                                  'guest';
+                                  undef;
     $self->{client}->{password} = defined $arg{PASSWORD} ?
                                   $arg{PASSWORD} :
-                                  'guest';
+                                  undef;
+    $self->{client}->{certfile} = defined $arg{CERTFILE} ?
+                                  $arg{CERTFILE} :
+                                  undef;
+    $self->{client}->{certpass} = defined $arg{CERTPASS} ?
+                                  $arg{CERTPASS} :
+                                  undef;
     $self->{client}->{provider} = defined $arg{PROVIDER} ?
                                   $arg{PROVIDER} :
                                   undef;
     $self->{client}->{endpoint_root} = defined $arg{ENDPOINT_ROOT} ?
                                        $arg{ENDPOINT_ROOT} :
                                        'https://api.echo.nasa.gov/echo-rest/';
+    $self->{client}->{token_uri} = defined $arg{TOKEN_URI} ?
+                                       $arg{TOKEN_URI} :
+                                       'https://api.launchpad.nasa.gov/icam/api/sm/v1';
     $self->{client}->{catalog_endpoint_root} = defined $arg{CATALOG_ENDPOINT_ROOT} ?
                                        $arg{CATALOG_ENDPOINT_ROOT} :
                                        'https://cmr.earthdata.nasa.gov/ingest/';
@@ -1319,41 +1330,31 @@ sub _init {
 sub login {
     my ( $self ) = @_;
 
-    my $username = $self->getUsername();
-    my $password = $self->getPassword();
-    my $provider = $self->getProvider();
-    my $clientId = $provider;
-    my $hostname = Sys::Hostname::hostname();
-    my $packed_ip_address = (gethostbyname($hostname))[4];
-    my $ip_address = join('.', unpack('C4', $packed_ip_address));
+    my ($cmrToken, $errmsg);
+    if (defined $self->getCertFile()) {
+        my $tokenParam = {};
+        $tokenParam->{LP_URI} = $self->getTokenUri();
+        $tokenParam->{CMR_CERTFILE} = $self->getCertFile();
+        $tokenParam->{CMR_CERTPASS} = $self->getCertPass();
+        ($cmrToken, $errmsg) = S4PA::get_cmr_token($tokenParam);
+        if (defined $cmrToken) {
+            $self->{client}->{token} = $cmrToken;
+        } else {
+            $self->{_error} = "$errmsg";
+        }
 
-    my $tokenNode = XML::LibXML::Element->new('token');
-    $tokenNode->appendTextChild('username', $username);
-    $tokenNode->appendTextChild('password', $password);
-    $tokenNode->appendTextChild('client_id', $clientId);
-    $tokenNode->appendTextChild('user_ip_address', $ip_address);
-    $tokenNode->appendTextChild('provider', $provider);
-
-    # URL should look like https://api.echo.nasa.gov/echo-rest/tokens
-    my $tokenUrl = $self->getEndpointRoot() . 'tokens';
-    my $request = HTTP::Request->new( 'POST',
-                                      $tokenUrl,
-                                      [Content_Type => 'application/xml'],
-                                      $tokenNode->toString() );
-    my $user_agent = LWP::UserAgent->new();
-    $user_agent->env_proxy;
-    my $response = $user_agent->request($request);
-    if ($response->is_success) {
-        my $xml = $response->content;
-        my $tokenDom;
-        my $xmlParser = XML::LibXML->new();
-        eval {$tokenDom = $xmlParser->parse_string($xml); };
-        S4P::perish( 2, "Could not parse response from CMR token request:  $@\n" ) if $@;
-        my $tokenDoc = $tokenDom->documentElement();
-        my ($idNode) = $tokenDoc->findnodes('/token/id');
-        $self->{client}->{token} = $idNode->textContent();
     } else {
-        $self->{_error} = "$@";
+        my $tokenParam = {};
+        $tokenParam->{ECHO_URI} = $self->getEndpointRoot();
+        $tokenParam->{CMR_USERNAME} = $self->getUsername();
+        $tokenParam->{CMR_PASSWORD} = $self->getPassword();
+        $tokenParam->{CMR_PROVIDER} = $self->getProvider();
+        ($cmrToken, $errmsg) = S4PA::get_cmr_token($tokenParam);
+        if (defined $cmrToken) {
+            $self->{client}->{token} = $cmrToken;
+        } else {
+            $self->{_error} = "$errmsg";
+        }
     }
 
     $self->{_login} = $self->onError() ? 0 : 1;
@@ -1807,6 +1808,12 @@ sub AUTOLOAD {
         return $self->{client}->{username};
     } elsif ( $AUTOLOAD =~ /.*::getPassword/ ) {
         return $self->{client}->{password};
+    } elsif ( $AUTOLOAD =~ /.*::getCertFile/ ) {
+        return $self->{client}->{certfile};
+    } elsif ( $AUTOLOAD =~ /.*::getCertPass/ ) {
+        return $self->{client}->{certpass};
+    } elsif ( $AUTOLOAD =~ /.*::getTokenUri/ ) {
+        return $self->{client}->{token_uri};
     } elsif ( $AUTOLOAD =~ /.*::getProvider/ ) {
         return $self->{client}->{provider};
     } elsif ( $AUTOLOAD =~ /.*::getTypesNs/ ) {
@@ -2306,16 +2313,16 @@ sub _init {
                                        5;
     $self->{client}->{endpoint_root} = defined $arg{ENDPOINT_ROOT} ?
                                        $arg{ENDPOINT_ROOT} :
-                                       'https://dotchart.gesdisc.eosdis.nasa.gov/dotchart/';
+                                       'https://tads1.gesdisc.eosdis.nasa.gov/cgi-bin/dotchart/';
     $self->{client}->{service_timeout} = defined $arg{SERVICE_TIMEOUT} ?
                                          $arg{SERVICE_TIMEOUT} :
                                          600;
     $self->{client}->{service_ns} = defined $arg{SERVICE_NS} ?
                                     $arg{SERVICE_NS} :
-                                    'https://dotchart.gesdisc.eosdis.nasa.gov/DotchartDatasetInfo';
+                                    'https://tads1.gesdisc.eosdis.nasa.gov/DotchartDatasetInfo';
     $self->{client}->{types_ns} = defined $arg{TYPES_NS} ?
                                   $arg{TYPES_NS} :
-                                 'https://dotchart.gesdisc.eosdis.nasa.gov/DotchartDatasetInfo';
+                                 'https://tads1.gesdisc.eosdis.nasa.gov/DotchartDatasetInfo';
     $self->{ftp_pull_timeout} = $arg{FTP_PULL_TIMEOUT};
     $self->{partner_protocol} = $arg{PARTNER_PROTOCOL};
 }

@@ -127,6 +127,7 @@ scripts/s4pa_get_cmr_access.pl
 scripts/s4pa_cmr_dataset.pl
 scripts/s4pa_recycle_volumes.pl
 scripts/s4pa_zombie_monitor.pl
+scripts/s4pa_launchpad_token.pl
 Storage/Makefile.PL
 Storage/MANIFEST
 Storage/README

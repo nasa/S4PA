@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- $Id: S4paDIF102HTML.xsl,v 1.1 2015/12/11 13:36:00 glei Exp $ -->
+<!-- $Id: S4paDIF102HTML.xsl,v 1.2 2020/05/21 10:44:07 s4pa Exp $ -->
 <!-- -@@@ S4PA, Version $Name:  $ -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
 
@@ -58,7 +58,8 @@
         <xsl:if test="Dataset_Citation/Dataset_Release_Date">
           <tr>
             <td><strong>Release Date</strong></td>
-            <td><xsl:value-of select="Dataset_Citation/Dataset_Release_Date" /></td>
+            <xsl:variable name="datetime" select="Dataset_Citation/Dataset_Release_Date" />
+            <td><xsl:value-of select="substring-before($datetime,'T')" /></td>
           </tr>
         </xsl:if>
         <xsl:if test="Dataset_Citation/Dataset_Release_Place">
@@ -242,10 +243,12 @@
             <td width="100"><strong>Short Name</strong></td>
             <td><xsl:value-of select="Short_Name" /></td>
           </tr>
-          <tr>
-            <td><strong>Long Name</strong></td>
-            <td><xsl:value-of select="Long_Name" /></td>
-          </tr>
+          <xsl:if test="Long_Name">
+            <tr>
+              <td><strong>Long Name</strong></td>
+              <td><xsl:value-of select="Long_Name" /></td>
+            </tr>
+          </xsl:if>
         </table>
         <br/>
       </xsl:for-each>
@@ -460,29 +463,38 @@
           <tr>
             <td>Name</td>
             <td>
-              <xsl:if test="Personnel/Contact_Person/First_Name">
-                <xsl:value-of select="Personnel/Contact_Person/First_Name" />
-                <xsl:text> </xsl:text>
-              </xsl:if>
-              <xsl:if test="Personnel/Contact_Person/Middle_Name">
-                <xsl:value-of select="Personnel/Middle_Name" />
-                <xsl:text> </xsl:text>
-              </xsl:if>
-              <xsl:value-of select="Personnel/Contact_Person/Last_Name" />
+              <xsl:choose>
+                <xsl:when test="Personnel/Contact_Group/First_Name">
+                  <xsl:if test="Personnel/Contact_Group/First_Name">
+                    <xsl:value-of select="Personnel/Contact_Group/First_Name" />
+                    <xsl:text> </xsl:text>
+                  </xsl:if>
+                  <xsl:if test="Personnel/Contact_Group/Middle_Name">
+                    <xsl:value-of select="Personnel/Middle_Name" />
+                    <xsl:text> </xsl:text>
+                  </xsl:if>
+                  <xsl:value-of select="Personnel/Contact_Group/Last_Name" />
+                </xsl:when>
+                <xsl:otherwise>
+                  <xsl:if test="Personnel/Contact_Group/Name">
+                    <xsl:value-of select="Personnel/Contact_Group/Name" />
+                  </xsl:if>
+                </xsl:otherwise>
+              </xsl:choose>
             </td>
           </tr>
           <tr>
             <td>Email</td>
-            <xsl:if test="Personnel/Contact_Person/Email">
+            <xsl:if test="Personnel/Contact_Group/Email">
               <td>
-                <xsl:element name="a"><xsl:attribute name="href"><xsl:text>mailto:</xsl:text><xsl:value-of select="Personnel/Contact_Person/Email" /></xsl:attribute><xsl:value-of select="Personnel/Contact_Person/Email" /></xsl:element>
+                <xsl:element name="a"><xsl:attribute name="href"><xsl:text>mailto:</xsl:text><xsl:value-of select="Personnel/Contact_Group/Email" /></xsl:attribute><xsl:value-of select="Personnel/Contact_Group/Email" /></xsl:element>
               </td>
             </xsl:if>
           </tr>
           <tr>
             <td>Phone</td>
             <td>
-              <xsl:for-each select="Personnel/Contact_Person/Phone">
+              <xsl:for-each select="Personnel/Contact_Group/Phone">
                 <xsl:if test="Type = 'Telephone'">
                   <xsl:value-of select="Number" />
                 </xsl:if>
@@ -492,7 +504,7 @@
           <tr>
             <td>Fax</td>
             <td>
-              <xsl:for-each select="Personnel/Contact_Person/Phone">
+              <xsl:for-each select="Personnel/Contact_Group/Phone">
                 <xsl:if test="Type = 'Fax'">
                   <xsl:value-of select="Number" />
                 </xsl:if>
@@ -501,14 +513,14 @@
           </tr>
           <tr>
             <td>Address</td><td>
-            <xsl:if test="Personnel/Contact_Person/Address">
-              <xsl:for-each select="Personnel/Contact_Person/Address/Street_Address">
+            <xsl:if test="Personnel/Contact_Group/Address">
+              <xsl:for-each select="Personnel/Contact_Group/Address/Street_Address">
                 <xsl:value-of select="current()" /><xsl:text>, </xsl:text>
               </xsl:for-each>
-              <xsl:value-of select="Personnel/Contact_Person/Address/City" /><xsl:text>, </xsl:text>
-              <xsl:value-of select="Personnel/Contact_Person/Address/State_Province" /><xsl:text>, </xsl:text>
-              <xsl:value-of select="Personnel/Contact_Person/Address/Postal_Code" /><xsl:text>, </xsl:text>
-              <xsl:value-of select="Personnel/Contact_Person/Address/Country" />
+              <xsl:value-of select="Personnel/Contact_Group/Address/City" /><xsl:text>, </xsl:text>
+              <xsl:value-of select="Personnel/Contact_Group/Address/State_Province" /><xsl:text>, </xsl:text>
+              <xsl:value-of select="Personnel/Contact_Group/Address/Postal_Code" /><xsl:text>, </xsl:text>
+              <xsl:value-of select="Personnel/Contact_Group/Address/Country" />
             </xsl:if></td>
           </tr>
         </xsl:for-each>
@@ -525,14 +537,18 @@
             <td width="100"><strong>Media</strong></td>
             <td><xsl:value-of select="Distribution/Distribution_Media" /></td>
           </tr>
-          <tr>
-            <td><strong>Size</strong></td>
-            <td><xsl:value-of select="Distribution/Distribution_Size" /></td>
-          </tr>
-          <tr>
-            <td><strong>Format</strong></td>
-            <td><xsl:value-of select="Distribution/Distribution_Format" /></td>
-          </tr>
+          <xsl:if test="Distribution/Distribution_Size">
+            <tr>
+              <td><strong>Size</strong></td>
+              <td><xsl:value-of select="Distribution/Distribution_Size" /></td>
+            </tr>
+          </xsl:if>
+          <xsl:if test="Distribution/Distribution_Format">
+            <tr>
+              <td><strong>Format</strong></td>
+              <td><xsl:value-of select="Distribution/Distribution_Format" /></td>
+            </tr>
+          </xsl:if>
           <tr>
             <td><strong>Fees</strong></td>
             <td><xsl:value-of select="Distribution/Fees" /></td>
@@ -543,6 +559,81 @@
     <br/>
 
 <!-- Reference table; optional depending on existence of Reference tag -->
+    <xsl:if test="Reference">
+      <h3 style="margin-bottom: 0;"><strong>Reference</strong></h3>
+      <blockquote style="margin-top: 0;">
+      <xsl:choose>
+        <xsl:when test="Reference/Citation">
+          <table width="800" border="1">
+            <tr>
+              <td>
+                <xsl:for-each select="Reference/Citation">
+                  <xsl:call-template name="CopyWithLineBreaks">
+                    <xsl:with-param name="string" select="." />
+                  </xsl:call-template><br/>
+                </xsl:for-each>
+              </td>
+            </tr>
+          </table>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:for-each select="Reference">
+            <table width="800" border="1">
+              <tr>
+                <td width="150"><strong>Author</strong></td>
+                <td>
+                  <xsl:call-template name="CopyWithLineBreaks">
+                    <xsl:with-param name="string" select="Author" />
+                  </xsl:call-template><br/>
+                </td>
+              </tr>
+              <tr>
+                <td width="150"><strong>Title</strong></td>
+                <td>
+                  <xsl:call-template name="CopyWithLineBreaks">
+                    <xsl:with-param name="string" select="Title" />
+                  </xsl:call-template><br/>
+                </td>
+              </tr>
+              <xsl:if test="Publisher">
+                <tr>
+                  <td width="150"><strong>Publisher</strong></td>
+                  <td>
+                    <xsl:call-template name="CopyWithLineBreaks">
+                      <xsl:with-param name="string" select="Publisher" />
+                    </xsl:call-template><br/>
+                  </td>
+                </tr>
+              </xsl:if>
+              <tr>
+                <td width="150"><strong>Publication Date</strong></td>
+                <td>
+                  <!--
+                  <xsl:call-template name="CopyWithLineBreaks">
+                    <xsl:with-param name="string" select="Publication_Date" />
+                  </xsl:call-template><br/>
+                  -->
+                  <xsl:variable name="datetime" select="Publication_Date" />
+                  <xsl:value-of select="substring-before($datetime,'T')" />
+                </td>
+              </tr>
+              <tr>
+                <td width="150"><strong>DOI</strong></td>
+                <td>
+                  <xsl:call-template name="CopyWithLineBreaks">
+                    <xsl:with-param name="string" select="Persistent_Identifier/Identifier" />
+                  </xsl:call-template><br/>
+                </td>
+              </tr>
+            </table>
+            <br/>
+          </xsl:for-each>
+        </xsl:otherwise>
+      </xsl:choose>
+      </blockquote>
+    </xsl:if>
+
+<!-- Reference table; optional depending on existence of Reference tag
     <xsl:if test="Reference/Citation">
       <h3 style="margin-bottom: 0;"><strong>Reference</strong></h3>
       <blockquote style="margin-top: 0;">
@@ -560,6 +651,7 @@
       </blockquote>
     </xsl:if>
     <br/>
+-->
 
 <!-- Summary table -->
     <h3 style="margin-bottom: 0;"><strong>Summary</strong></h3>

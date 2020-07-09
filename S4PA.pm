@@ -51,9 +51,15 @@ use File::Copy;
 use Cwd;
 use Safe;
 use Data::Dumper;
+use JSON;
+use Sys::Hostname;
+use HTTP::Request;
+use HTTP::Headers;
+use LWP::UserAgent;
+use XML::LibXML;
 use strict;
 
-our $VERSION = '3.43.7';
+our $VERSION = '3.43.8';
 
 ###############################################################################
 # =head1 LoadStationConfig
@@ -1677,3 +1683,130 @@ sub ManageWorkOrder
         -command => sub { $topWin->destroy; } );
     MainLoop unless defined $parent;
 }
+
+sub get_cmr_token {
+    my ($tokenParam) = @_;
+
+    my ($cmrToken, $errmsg);
+    # the original token acquiring from CMR/ECHO
+    if (defined $tokenParam->{ECHO_URI}) {
+        my ($uri, $username, $password, $provider);
+        $uri = $tokenParam->{ECHO_URI};
+        if (defined $tokenParam->{CMR_USERNAME}) {
+            $username = $tokenParam->{CMR_USERNAME} 
+        }
+        if (defined $tokenParam->{CMR_PASSWORD}) {
+            $password = $tokenParam->{CMR_PASSWORD};
+        }
+        if (defined $tokenParam->{CMR_PROVIDER}) {
+            $provider = $tokenParam->{CMR_PROVIDER} 
+        }
+        unless (defined $username && defined $password && defined $provider) {
+            $errmsg = "ECHO token parameters not provided.";
+            return (undef, $errmsg);
+        }
+
+        # get ECHO token
+        ($cmrToken, $errmsg) = get_echo_token($uri, $username, $password, $provider);
+
+    # CMR switch from Earthdata login to Launchpad token for authentication
+    } elsif (defined $tokenParam->{LP_URI}) {
+        my ($uri, $pfxFile, $passFile, $smToken);
+        $uri = $tokenParam->{LP_URI};
+        if (defined $tokenParam->{CMR_CERTFILE}) {
+            $pfxFile = $tokenParam->{CMR_CERTFILE};
+        }
+        if (defined $tokenParam->{CMR_CERTPASS}) {
+            $passFile = $tokenParam->{CMR_CERTPASS};
+        }
+        if (defined $tokenParam->{LP_TOKEN}) {
+            $smToken = $tokenParam->{LP_TOKEN};
+        }
+        unless (defined $pfxFile && defined $passFile) {
+            $errmsg = "Launchpad token parameters not provided.";
+            return (undef, $errmsg);
+        }
+        if (defined $tokenParam->{LP_TOKEN}) {
+            # with existing token for validation if it expired
+            $smToken = $tokenParam->{LP_TOKEN};
+        }
+
+        # get Launchpad token
+        ($cmrToken, $errmsg) = get_launchpad_token($uri, $pfxFile, $passFile, $smToken);
+    }
+
+    return ($cmrToken, $errmsg);
+}
+
+sub get_launchpad_token {
+    my ($uri, $pfxFile, $passFile, $smToken) = @_;
+
+    my $tokenCmd;
+    if (defined $smToken) {
+        # with existing token for validation if it expired
+        $tokenCmd = "s4pa_launchpad_token.pl -c $pfxFile -p $passFile -u $uri -s $smToken";
+    } else {
+        # request new token
+        $tokenCmd = "s4pa_launchpad_token.pl -c $pfxFile -p $passFile -u $uri";
+    }
+
+    my ($token, $errmsg);
+    my $result = `$tokenCmd`;
+    if ($?) {
+        $errmsg = "Failed to get Launchpad token with $tokenCmd";
+        return (undef, $errmsg);
+    }
+    my $response = from_json($result);
+    if ($response->{'status'} eq 'success') {
+        $token = $response->{'sm_token'};
+    } else {
+        $errmsg = "Unable to get Launchpad token: $response->{'message'}";
+        return (undef, $errmsg);
+    }
+
+    return $token, undef;
+}
+
+sub get_echo_token {
+    my ($uri, $username, $pwd, $provider) = @_;
+
+    my $hostname = Sys::Hostname::hostname();
+    my $packed_ip_address = (gethostbyname($hostname))[4];
+    my $ip_address = join('.', unpack('C4', $packed_ip_address));
+
+    my $tokenNode = XML::LibXML::Element->new('token');
+    $tokenNode->appendTextChild('username', $username);
+    $tokenNode->appendTextChild('password', $pwd);
+    $tokenNode->appendTextChild('client_id', 'GES_DISC');
+    $tokenNode->appendTextChild('user_ip_address', $ip_address);
+    $tokenNode->appendTextChild('provider', $provider);
+
+    my ($id, $errmsg);
+    my $tokenUrl = $uri . 'tokens';
+    my $request = HTTP::Request->new( 'POST',
+                                      $tokenUrl,
+                                      [Content_Type => 'application/xml'],
+                                      $tokenNode->toString() );
+    my $ua = LWP::UserAgent->new;
+    my $response = $ua->request($request);
+    if ($response->is_success) {
+        my $xml = $response->content;
+        my $tokenDom;
+        my $xmlParser = XML::LibXML->new();
+        eval {$tokenDom = $xmlParser->parse_string($xml); };
+        if ($@) {
+            $errmsg = "Could not parse response from CMR token request:  $@\n";
+            return undef, $errmsg;
+        }
+        my $tokenDoc = $tokenDom->documentElement();
+        my ($idNode) = $tokenDoc->findnodes('/token/id');
+        $id = $idNode->textContent();
+    } else {
+        $errmsg = "Could not connect to CMR API for login; check if CMR API is down.\nReason:  $@\n";
+        return undef, $errmsg;
+    }
+
+    return $id, undef;
+}
+
+

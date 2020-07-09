@@ -9,7 +9,7 @@
 
 name:      %{pkgname}
 summary:   S4PA - S4P based online archive
-version:   3.43.7
+version:   3.43.8
 release:   GESDISC%{?dist}
 buildarch: noarch
 License: GESDISC_Internal

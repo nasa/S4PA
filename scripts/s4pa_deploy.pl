@@ -61,7 +61,7 @@ M. Hegde, SSAI
 =cut
 
 ################################################################################
-# $Id: s4pa_deploy.pl,v 1.320 2019/06/30 21:11:18 glei Exp $
+# $Id: s4pa_deploy.pl,v 1.322 2020/05/26 19:20:26 s4pa Exp $
 # -@@@ S4PA, Version $Name:  $
 ################################################################################
 
@@ -77,6 +77,10 @@ use S4PA::Storage;
 use LWP::Simple;
 use Safe;
 use Log::Log4perl;
+use Clavis;
+use JSON;
+use LWP::UserAgent;
+use HTTP::Request;
 
 my ( $opt ) = {};
 
@@ -125,6 +129,7 @@ die "Failed to validate $opt->{f} with $opt->{s}\n$@" if $@;
 # Set the umask so that all directories/files are writable by S4PA user.
 umask 0022;
 
+# Get global parameters
 my $global = GetGlobalParameters( $doc );
 
 # Message logging
@@ -253,7 +258,7 @@ if ( defined $logger ) {
         DeployLogging( 'info', "Deployment completed without error." );
     } else {
         print STDERR "\n##########################################\n" .
-            "Error Messages recorded during deployment:\n";
+            "Error/Warning Messages recorded during deployment:\n";
         while ( my $stack = Log::Log4perl::NDC->pop() ) {
             print STDERR "$stack\n";
         }
@@ -285,6 +290,7 @@ sub CreateOtherStations
     my $cmrCollectionID = {};
     my $echoVisible = {};
     my $cmrVisible = {};
+    my %existCmrCollection;
     my $transientArchive = {}; 
     my $datasetDocUrl = {};
 
@@ -292,34 +298,43 @@ sub CreateOtherStations
     DeployLogging( 'fatal', "Failed to read dataset->data class mapping ($!)" )
         unless $cpt->rdo( "$global->{S4PA_ROOT}/storage/dataset.cfg" );
 
-    my $cmrInfo = new Safe 'CMRINFO';
-    DeployLogging( 'warn', "Failed to read echo visibility mapping ($!)" )
-        unless $cmrInfo->rdo( "$global->{S4PA_ROOT}/other/housekeeper/s4pa_dif_info.cfg" );
+    # some instances does not have CMR/ECHO interface at all.
+    # so, only check if instance actually publish to CMR.
+    if (-f "$global->{S4PA_ROOT}/other/housekeeper/s4pa_dif_info.cfg") {
+        my $cmrInfo = new Safe 'CMRINFO';
+        DeployLogging( 'warn', "Failed to read echo visibility mapping ($!)" )
+            unless $cmrInfo->rdo( "$global->{S4PA_ROOT}/other/housekeeper/s4pa_dif_info.cfg" );
 
-    # assign current visibility from configuration file
-    foreach my $dataset ( keys %CMRINFO::echo_visible ) {
-        foreach my $version ( keys %{$CMRINFO::echo_visible{$dataset}} ) {
-            $echoVisible->{$dataset}{$version} = $CMRINFO::echo_visible{$dataset}{$version};
+        # assign current visibility from configuration file
+        foreach my $dataset ( keys %CMRINFO::echo_visible ) {
+            foreach my $version ( keys %{$CMRINFO::echo_visible{$dataset}} ) {
+                $echoVisible->{$dataset}{$version} = $CMRINFO::echo_visible{$dataset}{$version};
+            }
         }
-    }
 
-    # assign current visibility from configuration file
-    foreach my $dataset ( keys %CMRINFO::cmr_visible ) {
-        foreach my $version ( keys %{$CMRINFO::cmr_visible{$dataset}} ) {
-            $cmrVisible->{$dataset}{$version} = $CMRINFO::cmr_visible{$dataset}{$version};
+        # assign current visibility from configuration file
+        foreach my $dataset ( keys %CMRINFO::cmr_visible ) {
+            foreach my $version ( keys %{$CMRINFO::cmr_visible{$dataset}} ) {
+                $cmrVisible->{$dataset}{$version} = $CMRINFO::cmr_visible{$dataset}{$version};
+            }
         }
-    }
 
-    # save current CMR collection IDs
-    my %existCmrCollection;
-    foreach my $dataset ( keys %CMRINFO::cmr_collection_id ) {
-        foreach my $version ( keys %{$CMRINFO::cmr_collection_id{$dataset}} ) {
-            $existCmrCollection{$dataset}{$version}{'entry_id'} = 
-                $CMRINFO::cmr_collection_id{$dataset}{$version}{'entry_id'}
-                if ( exists $CMRINFO::cmr_collection_id{$dataset}{$version}{'entry_id'} );
-            $existCmrCollection{$dataset}{$version}{'native_id'} = 
-                $CMRINFO::cmr_collection_id{$dataset}{$version}{'native_id'}
-                if ( exists $CMRINFO::cmr_collection_id{$dataset}{$version}{'native_id'} );
+        # save current CMR collection IDs
+        foreach my $dataset ( keys %CMRINFO::cmr_collection_id ) {
+            foreach my $version ( keys %{$CMRINFO::cmr_collection_id{$dataset}} ) {
+                $existCmrCollection{$dataset}{$version}{'entry_id'} = 
+                    $CMRINFO::cmr_collection_id{$dataset}{$version}{'entry_id'}
+                    if ( exists $CMRINFO::cmr_collection_id{$dataset}{$version}{'entry_id'} );
+                $existCmrCollection{$dataset}{$version}{'native_id'} = 
+                    $CMRINFO::cmr_collection_id{$dataset}{$version}{'native_id'}
+                    if ( exists $CMRINFO::cmr_collection_id{$dataset}{$version}{'native_id'} );
+                $existCmrCollection{$dataset}{$version}{'concept_id'} = 
+                    $CMRINFO::cmr_collection_id{$dataset}{$version}{'concept_id'}
+                    if ( exists $CMRINFO::cmr_collection_id{$dataset}{$version}{'concept_id'} );
+                $existCmrCollection{$dataset}{$version}{'revision_id'} = 
+                    $CMRINFO::cmr_collection_id{$dataset}{$version}{'revision_id'}
+                    if ( exists $CMRINFO::cmr_collection_id{$dataset}{$version}{'revision_id'} );
+            }
         }
     }
 
@@ -382,6 +397,12 @@ sub CreateOtherStations
                     $cmrCollectionID->{$dataName}{$versionLabel}{'native_id'} =
                         $existCmrCollection{$dataName}{$versionLabel}{'native_id'}
                         if ( exists $existCmrCollection{$dataName}{$versionLabel}{'native_id'} );
+                    $cmrCollectionID->{$dataName}{$versionLabel}{'concept_id'} =
+                        $existCmrCollection{$dataName}{$versionLabel}{'concept_id'}
+                        if ( exists $existCmrCollection{$dataName}{$versionLabel}{'concept_id'} );
+                    $cmrCollectionID->{$dataName}{$versionLabel}{'revision_id'} =
+                        $existCmrCollection{$dataName}{$versionLabel}{'revision_id'}
+                        if ( exists $existCmrCollection{$dataName}{$versionLabel}{'revision_id'} );
                 } else {
                     # make sure we need to fetch collection metadata if publishing to CMR
                     DeployLogging( 'error', "No collection metadata fetching flag was set for " .
@@ -632,10 +653,10 @@ sub CreateOtherStations
             if (not defined $global->{DIFFETCHER}{TOKEN_URI});
         DeployLogging( 'fatal', "DIF Fetching PROVIDER is not defined" )
             if (not defined $global->{DIFFETCHER}{PROVIDER});
-        DeployLogging( 'fatal', "DIF Fetching USERNAME is not defined" )
-            if (not defined $global->{DIFFETCHER}{USERNAME});
-        DeployLogging( 'fatal', "DIF Fetching encrypted PASSWORD is not defined" )
-            if (not defined $global->{DIFFETCHER}{PASSWORD});
+        DeployLogging( 'fatal', "DIF Fetching USERNAME or CERT_FILE is not defined" )
+            if (not defined $global->{DIFFETCHER}{CERT_FILE} and not defined $global->{DIFFETCHER}{USERNAME});
+        DeployLogging( 'fatal', "DIF Fetching encrypted PASSWORD or CERT_PASS is not defined" )
+            if (not defined $global->{DIFFETCHER}{CERT_PASS} and not defined $global->{DIFFETCHER}{PASSWORD});
 
         $virtualJobs = { FETCH_DIF => 1 };
         $downStream = { CONVERT_DIF => [ 'other/housekeeper' ] };
@@ -684,9 +705,11 @@ sub CreateOtherStations
 
         my $cmr_rest_base = $global->{DIFFETCHER}{ENDPOINT_URI};
         my $cmr_token_base = $global->{DIFFETCHER}{TOKEN_URI};
-        my $cmr_username = $global->{DIFFETCHER}{USERNAME};
-        my $cmr_password = $global->{DIFFETCHER}{PASSWORD};
         my $cmr_provider = $global->{DIFFETCHER}{PROVIDER};
+        my $cmr_username = $global->{DIFFETCHER}{USERNAME} if (defined $global->{DIFFETCHER}{USERNAME});
+        my $cmr_password = $global->{DIFFETCHER}{PASSWORD} if (defined $global->{DIFFETCHER}{PASSWORD});
+        my $cmr_certfile = $global->{DIFFETCHER}{CERT_FILE} if (defined $global->{DIFFETCHER}{CERT_FILE});
+        my $cmr_certpass = $global->{DIFFETCHER}{CERT_PASS} if (defined $global->{DIFFETCHER}{CERT_PASS});
 
         my $destination = {};
         if ( $global->{PUBLISH_ECHO} ) {
@@ -725,7 +748,7 @@ sub CreateOtherStations
             $destination->{EMS} = lc($global->{PROTOCOL}{$dotChartHost})
                 . ":$dotChartHost$dotChartDir";
         }
-                               
+
         $config = {
             dataset_to_dif_entry_id => $datasetToDifMap,
             cmr_collection_id => $cmrCollectionID,
@@ -734,11 +757,8 @@ sub CreateOtherStations
             dataset_doc_url => $datasetDocUrl,
             ECHO_XSLFILE => "../S4paDIF2ECHO.xsl",
             S4PA_XSLFILE => "../S4paDIF102Collect.xsl",
-            CMR_USERNAME => $cmr_username,
-            CMR_PASSWORD => $cmr_password,
             CMR_PROVIDER => $cmr_provider,
             CMR_ENDPOINT_URI => $cmr_rest_base,
-            CMR_TOKEN_URI => $cmr_token_base,
             TMPDIR => "$global->{S4PA_ROOT}/tmp",
             destination => $destination,
             max_fetch_attempts => 3,
@@ -755,10 +775,22 @@ sub CreateOtherStations
                 MIRADOR_TARGET_XFORMS => 'HASH',
                 }
             };
-            
+
         $config->{ECHO_XSLFILE} = "../S4paDIF2ECHO10.xsl"
             if ( $global->{ECHO}{VERSION} > 9 );
-            
+
+        # either ECHO token with username/password
+        # or Launchpad token with certificate file/password
+        if (defined $cmr_certfile) {
+            $config->{LAUNCHPAD_URI} = $cmr_token_base;
+            $config->{CMR_CERTFILE} = $cmr_certfile;
+            $config->{CMR_CERTPASS} = $cmr_certpass;
+        } else {
+            $config->{CMR_TOKEN_URI} = $cmr_token_base;
+            $config->{CMR_USERNAME} = $cmr_username;
+            $config->{CMR_PASSWORD} = $cmr_password;
+        }
+
         S4PA::WriteStationConfig( 's4pa_dif_info.cfg', $difFetcherStationDir,
             $config );
         S4PA::WriteStationConfig( 's4pa_dif_info.cfg', $houseKeeperStationDir,
@@ -1556,9 +1588,6 @@ sub CreatePublishCmrStations
         RESTRICTED_ROOTURL => $global->{URL}{HTTP},
         INSTANCE_NAME => $global->{S4PA_NAME},
         CMR_ENDPOINT_URI => $global->{CMR}{CMR_ENDPOINT_URI},
-        CMR_TOKEN_URI => $global->{CMR}{CMR_TOKEN_URI},
-        CMR_USERNAME => $global->{CMR}{USERNAME},
-        CMR_PASSWORD => $global->{CMR}{PASSWORD},
         CMR_PROVIDER => $global->{CMR}{PROVIDER},
         MAX_GRANULE_COUNT => $global->{CMR}{MAX_GRANULE_COUNT},
         DATA_ACCESS => $dataAccess,
@@ -1566,6 +1595,19 @@ sub CreatePublishCmrStations
             DATA_ACCESS => 'HASH',
             }
         };
+
+    # either ECHO token with username/password
+    # or Launchpad token with certificate file/password
+    if (defined $global->{CMR}{CERT_FILE}) {
+        $config->{LAUNCHPAD_URI} = $global->{CMR}{CMR_TOKEN_URI};
+        $config->{CMR_CERTFILE} = $global->{CMR}{CERT_FILE};
+        $config->{CMR_CERTPASS} = $global->{CMR}{CERT_PASS};
+    } else {
+        $config->{CMR_TOKEN_URI} = $global->{CMR}{CMR_TOKEN_URI};
+        $config->{CMR_USERNAME} = $global->{CMR}{USERNAME};
+        $config->{CMR_PASSWORD} = $global->{CMR}{PASSWORD};
+    }
+
     # if (defined $cmrAccess) {
     #     $config->{CMR_ACCESS} = $cmrAccess;
     #     $config->{__TYPE__}{CMR_ACCESS} = 'HASH';
@@ -1603,12 +1645,22 @@ sub CreatePublishCmrStations
         RESTRICTED_ROOTURL => $global->{URL}{HTTP},
         INSTANCE_NAME => $global->{S4PA_NAME},
         CMR_ENDPOINT_URI => $global->{CMR}{CMR_ENDPOINT_URI},
-        CMR_TOKEN_URI => $global->{CMR}{CMR_TOKEN_URI},
-        CMR_USERNAME => $global->{CMR}{USERNAME},
-        CMR_PASSWORD => $global->{CMR}{PASSWORD},
         CMR_PROVIDER => $global->{CMR}{PROVIDER},
         MAX_GRANULE_COUNT => $global->{CMR}{MAX_GRANULE_COUNT},
         }; 
+    
+    # either ECHO token with username/password
+    # or Launchpad token with certificate file/password
+    if (defined $global->{CMR}{CERT_FILE}) {
+        $config->{LAUNCHPAD_URI} = $global->{CMR}{CMR_TOKEN_URI};
+        $config->{CMR_CERTFILE} = $global->{CMR}{CERT_FILE};
+        $config->{CMR_CERTPASS} = $global->{CMR}{CERT_PASS};
+    } else {
+        $config->{CMR_TOKEN_URI} = $global->{CMR}{CMR_TOKEN_URI};
+        $config->{CMR_USERNAME} = $global->{CMR}{USERNAME};
+        $config->{CMR_PASSWORD} = $global->{CMR}{PASSWORD};
+    }
+
     if ( defined $global->{LOGGER} ) {
         $config->{cfg_logger} = {
             LEVEL => $global->{LOGGER}{LEVEL},
@@ -2285,8 +2337,16 @@ sub CreatePostOfficeStation
     S4PA::CreateStation( $postOfficeStationDir, $config, $logger );
     $config = {
         max_attempt => $global->{POSTOFFICE}{MAX_ATTEMPT},
-        cfg_publish_dotchart => $global->{PUBLISH_DOTCHART}
+        cfg_publish_dotchart => $global->{PUBLISH_DOTCHART},
         };
+
+    # add Launchpad token with certificate file/password
+    if (defined $global->{CMR}{CERT_FILE}) {
+        $config->{LAUNCHPAD_URI} = $global->{CMR}{CMR_TOKEN_URI};
+        $config->{CMR_CERTFILE} = $global->{CMR}{CERT_FILE};
+        $config->{CMR_CERTPASS} = $global->{CMR}{CERT_PASS};
+    }
+
     if ( defined $global->{LOGGER} ) {
         $config->{cfg_logger} = {
             LEVEL => $global->{LOGGER}{LEVEL},
@@ -2472,14 +2532,24 @@ sub CreateReconciliationStation
             cfg_partner => $jobName,
             cfg_s4pa_root => $global->{S4PA_ROOT},
             cfg_large_count_threshold => $global->{RECON}{CMR}{MAX_GRANULE_COUNT},
-            cfg_partner_service_username => $global->{CMR}{USERNAME},
-            cfg_partner_service_encrypted_pwd => $global->{CMR}{PASSWORD},
-            cfg_service_endpoint_uri => $global->{CMR}{CMR_TOKEN_URI},
             cfg_catalog_endpoint_uri => $global->{CMR}{CMR_ENDPOINT_URI} . 'ingest/',
             cfg_s4pa_instance_name => $global->{S4PA_NAME},
             cfg_deletion_xml_staging_dir => $global->{RECON}{CMR}{STAGING_DIR},
             cfg_partner_service_provider_id => $global->{CMR}{PROVIDER},
             };
+
+        # either ECHO token username/password
+        # or Launchpad token certificate file/password
+        if (defined $global->{CMR}{CERT_FILE}) {
+            $configCMR->{LAUNCHPAD_URI} = $global->{CMR}{CMR_TOKEN_URI};
+            $configCMR->{CMR_CERTFILE} = $global->{CMR}{CERT_FILE};
+            $configCMR->{CMR_CERTPASS} = $global->{CMR}{CERT_PASS};
+        } else {
+            $configCMR->{cfg_service_endpoint_uri} = $global->{CMR}{CMR_TOKEN_URI};
+            $configCMR->{cfg_partner_service_username} = $global->{CMR}{USERNAME};
+            $configCMR->{cfg_partner_service_encrypted_pwd} = $global->{CMR}{PASSWORD};
+        }
+
         if ($global->{RECON}{CMR}{CHROOT_DIR} eq 'null') {
             $configCMR->{cfg_temp_dir} = $global->{RECON}{CMR}{LOCAL_DIR};
         } else {
@@ -3607,20 +3677,21 @@ sub CreateReceiveDataStation
     my $logFile = defined $global->{LOGGER}
         ? "$global->{LOGGER}{DIR}/ingest.log" : undef;
     
+    my $collectionInfo = $global->{CMR}{COLLECTION_INFO};
     # Create a ReceiveData station for each provider
     my ( $downStream, $dataAccess, $metaMethod, $compressMethod, 
-	$decompressMethod, $dataToDif, $mapMethod )
-        = ( {}, {}, {}, {}, {}, {}, {} );
+        $decompressMethod, $dataToDif, $mapMethod, $collectionLink )
+        = ( {}, {}, {}, {}, {}, {}, {}, {} );
     # For each data class
     foreach my $dataClass ( $provider->findnodes( 'dataClass' ) ) {
         my $classAttr = GetDataAttributes( $dataClass );
         my $className = $classAttr->{NAME};
         DeployLogging( 'fatal', "Failed to find data class name for provider=$providerName" )
             unless defined $className;
-	# For each dataset of the class
-	foreach my $dataset ( $dataClass->findnodes( 'dataset' ) ) {
-	    my $dataAttr = GetDataAttributes( $dataset, $classAttr );
-	    my $dataName = $dataAttr->{NAME} || undef;
+        # For each dataset of the class
+        foreach my $dataset ( $dataClass->findnodes( 'dataset' ) ) {
+            my $dataAttr = GetDataAttributes( $dataset, $classAttr );
+            my $dataName = $dataAttr->{NAME} || undef;
             DeployLogging( 'fatal', "Failed to find data name for provider=$providerName,"
                 . " dataClass=$classAttr->{NAME}" ) unless defined $dataName;
             
@@ -3656,6 +3727,27 @@ sub CreateReceiveDataStation
                         $collectionVersion = $versionId;
                     }
 
+                    my $conceptId;
+                    if (exists $collectionInfo->{$providerName}{$className}{$dataName}{$versionId}) {
+                        my $link = $collectionInfo->{$providerName}{$className}{$dataName}{$versionId}{'link'};
+                        $collectionLink->{$dataName}{$versionId} = $link;
+                        if ($link eq 'CMR') {
+                            $conceptId = $collectionInfo->{$providerName}{$className}{$dataName}{$versionId}{'concept_id'};
+                        }
+                    } else {
+                        $collectionLink->{$dataName}{$versionId} = 'S4PA';
+                    }
+
+                    # if ($fetchFlag) {
+                    #     $collectionLink->{$dataName} = {} if (not exists $collectionLink->{$dataName});
+                    #     # default collection metadata link to S4PA collection
+                    #     if (defined $versionAttr->{COLLECTION_LINK}) {
+                    #         $collectionLink->{$dataName}{$versionId} = $versionAttr->{COLLECTION_LINK};
+                    #     } else {
+                    #         $collectionLink->{$dataName}{$versionId} = 'S4PA';
+                    #     }
+                    # }
+
                     # CMR collection metadata is being fetched
                     if ( ($versionAttr->{ACCESS} ne 'hidden') && $fetchFlag ) {
                         # CMR entry_id is usually <shortname>_<version>
@@ -3672,6 +3764,12 @@ sub CreateReceiveDataStation
 				. "/$dataName"
 				. ( $versionId ne '' ? ".$versionId/" : '/' )
 				. $entry_id . "_dif.xml";
+                        if (defined $conceptId) {
+                            my $uri = $global->{CMR}{CMR_ENDPOINT_URI};
+                            $uri =~ s/\/+$//;
+			    $dataToDif->{$dataName}{$versionId}{cmrUrl}
+                                = $uri . "/search/concepts/" . $conceptId;
+                        }
 
                     # GCMD DIF collection metadata is being fetched
                     } elsif ( ($versionAttr->{ACCESS} ne 'hidden') 
@@ -3705,6 +3803,14 @@ sub CreateReceiveDataStation
                 $dataAccess->{$dataName}{''} =
                     ( $dataAttr->{ACCESS} eq 'restricted' ) ? 0640
                     : ( $dataAttr->{ACCESS} eq 'hidden' ) ? 0600 : 0644;
+
+                if (defined $dataAttr->{COLLECTION_SHORTNAME}) {
+                    if (defined $dataAttr->{COLLECTION_LINK}) {
+                        $collectionLink->{$dataName}{''} = $dataAttr->{COLLECTION_LINK};
+                    } else {
+                        $collectionLink->{$dataName}{''} = 'S4PA';
+                    }
+                }
 
 		if ( ($dataAttr->{ACCESS} ne 'hidden') 
 		    && defined $dataAttr->{DIF_ENTRY_ID} ) {
@@ -3860,6 +3966,7 @@ sub CreateReceiveDataStation
 
     # Write out ReceiveData station specific configuration.
     my $config = {
+        cfg_root => $global->{S4PA_ROOT},
         cfg_data_to_dif => $dataToDif,
         cfg_root_url => $rootUrl,
 	cfg_metadata_methods => $metaMethod,
@@ -3867,6 +3974,7 @@ sub CreateReceiveDataStation
 	cfg_compress => $compressMethod,
 	cfg_uncompress => $decompressMethod,
 	cfg_access => $dataAccess,
+        cfg_collection_link => $collectionLink,
         cfg_protocol => $global->{PROTOCOL},
         cfg_pan_destination => $panPush,
         cfg_disk_limit => $diskLimit,
@@ -3879,6 +3987,7 @@ sub CreateReceiveDataStation
 	    cfg_compress => 'HASH',
 	    cfg_uncompress => 'HASH',
             cfg_access => 'HASH',
+            cfg_collection_link => 'HASH',
             cfg_protocol => 'HASH',
             cfg_pan_destination => 'HASH',
             cfg_disk_limit => 'HASH',
@@ -4335,14 +4444,14 @@ sub GetDataAttributes
             'OPENDAP_URL_PREFIX', 'OPENDAP_URL_SUFFIX', 'OPENDAP_RESOURCE_URL_SUFFIX',
             'PUBLISH_CMR', 'PUBLISH_CMR_OPENDAP',
             'PUBLISH_MIRADOR', 'PUBLISH_GIOVANNI', 'EXPIRY', 'DOC', 'WITH_HDF4MAP',
-            'MULTIPLE_REPLACEMENT' );
+            'MULTIPLE_REPLACEMENT', 'COLLECTION_LINK' );
     } elsif ( $nodeName eq 'dataset' ) {
         @attrList = ( 'GROUP', 'COLLECTION_SHORTNAME', 'TIME_MARGIN', 'FREQUENCY', 'ACCESS',
             'DIF_ENTRY_ID', 'PUBLISH_WHOM', 'PUBLISH_ECHO', 'PUBLISH_ECHO_OPENDAP',
             'OPENDAP_URL_PREFIX', 'OPENDAP_URL_SUFFIX', 'OPENDAP_RESOURCE_URL_SUFFIX',
             'PUBLISH_CMR', 'PUBLISH_CMR_OPENDAP',
             'PUBLISH_MIRADOR', 'PUBLISH_GIOVANNI', 'EXPIRY', 'DOC', 'WITH_HDF4MAP',
-            'MULTIPLE_REPLACEMENT' );
+            'MULTIPLE_REPLACEMENT', 'COLLECTION_LINK' );
         $nodeAttr->{CLASS} = $parentAttr->{NAME}
             if defined $parentAttr->{CLASS};
     } elsif ( $nodeName eq 'dataVersion' ) {
@@ -4351,7 +4460,7 @@ sub GetDataAttributes
             'OPENDAP_URL_PREFIX', 'OPENDAP_URL_SUFFIX', 'OPENDAP_RESOURCE_URL_SUFFIX',
             'PUBLISH_CMR', 'PUBLISH_CMR_OPENDAP',
             'PUBLISH_MIRADOR', 'PUBLISH_GIOVANNI', 'EXPIRY', 'DOC', 'WITH_HDF4MAP',
-            'MULTIPLE_REPLACEMENT' );
+            'MULTIPLE_REPLACEMENT', 'COLLECTION_LINK' );
         $nodeAttr->{CLASS} = $parentAttr->{CLASS} 
 	    if defined $parentAttr->{CLASS};
         $nodeAttr->{GROUP} = $parentAttr->{GROUP} 
@@ -4575,8 +4684,18 @@ sub GetGlobalParameters
         $global->{CMR}{CMR_ENDPOINT_URI} = $cmrPublication->getAttribute( 'CMR_ENDPOINT_URI' );
         $global->{CMR}{CMR_TOKEN_URI} = $cmrPublication->getAttribute( 'CMR_TOKEN_URI' );
         $global->{CMR}{PROVIDER} = $cmrPublication->getAttribute( 'PROVIDER' );
-        $global->{CMR}{USERNAME} = $cmrPublication->getAttribute( 'USERNAME' );
-        $global->{CMR}{PASSWORD} = $cmrPublication->getAttribute( 'PASSWORD' );
+        if (defined $cmrPublication->getAttribute('USERNAME')) {
+            $global->{CMR}{USERNAME} = $cmrPublication->getAttribute('USERNAME');
+        }
+        if (defined $cmrPublication->getAttribute('PASSWORD')) {
+            $global->{CMR}{PASSWORD} = $cmrPublication->getAttribute('PASSWORD');
+        }
+        if (defined $cmrPublication->getAttribute('CERT_FILE')) {
+            $global->{CMR}{CERT_FILE} = $cmrPublication->getAttribute('CERT_FILE');
+        }
+        if (defined $cmrPublication->getAttribute('CERT_PASS')) {
+             $global->{CMR}{CERT_PASS} = $cmrPublication->getAttribute('CERT_PASS');
+        }
         $global->{CMR}{MAX_GRANULE_COUNT} = $cmrPublication->getAttribute( 'MAX_GRANULE_COUNT' );
 
         my @skipPSANode = $cmrPublication->getChildrenByTagName( 'skipPublication' );
@@ -4586,6 +4705,9 @@ sub GetGlobalParameters
             $psaPair->{'PSAValue'} = $psa->getAttribute( 'PSAVALUE' );
             push @{$global->{CMR}{SKIPPSA}}, $psaPair; 
         }
+
+        my $collectionInfo = SearchCollection($doc, $global);
+        $global->{CMR}{COLLECTION_INFO} = $collectionInfo;
     }
 
     my ( $miradorPublication )
@@ -4800,6 +4922,16 @@ sub GetGlobalParameters
             $global->{DIFFETCHER}{PASSWORD} = $difFetcher->getAttribute( 'PASSWORD' );
         } elsif ( defined $global->{CMR}{PASSWORD} ) {
             $global->{DIFFETCHER}{PASSWORD} = $global->{CMR}{PASSWORD};
+        }
+        if ( defined $difFetcher->getAttribute( 'CERT_FILE' ) ) {
+            $global->{DIFFETCHER}{CERT_FILE} = $difFetcher->getAttribute( 'CERT_FILE' );
+        } elsif ( defined $global->{CMR}{CERT_FILE} ) {
+            $global->{DIFFETCHER}{CERT_FILE} = $global->{CMR}{CERT_FILE};
+        }
+        if ( defined $difFetcher->getAttribute( 'CERT_PASS' ) ) {
+            $global->{DIFFETCHER}{CERT_PASS} = $difFetcher->getAttribute( 'CERT_PASS' );
+        } elsif ( defined $global->{CMR}{CERT_PASS} ) {
+            $global->{DIFFETCHER}{CERT_PASS} = $global->{CMR}{CERT_PASS};
         }
     }
 
@@ -5241,7 +5373,7 @@ sub DeployLogging
 {
     my ( $level, $msg ) = @_;
     print STDERR "$msg\n";
-    if ( $level =~ /error/i ) {
+    if ( $level =~ /(error|warn)/i ) {
         $logger->error( "$msg" ) if defined $logger;
         Log::Log4perl::NDC->push( "$msg" );
     } elsif ( $level =~ /fatal/i ) {
@@ -5584,6 +5716,126 @@ sub CreateActiveFsList {
     return "Added $numVolume volume(s) to $fsListFile";
 }
 
+###############################################################################
+# =head1 SearchCollection
+# 
+# Description
+#   Search CMR concept-id for metadata link
+#
+# =cut
+###############################################################################
+sub SearchCollection {
+
+    my ($doc, $global) = @_;
+    # collect CMR collection metadata needs
+    my $needToken = 0;
+    my $collectionInfo = {};
+    foreach my $provider ($doc->findnodes('provider')) {
+        my $providerName = $provider->getAttribute('NAME');
+        foreach my $dataClass ($provider->findnodes('dataClass')) {
+            my $classAttr = GetDataAttributes($dataClass);
+            my $className = $classAttr->{NAME};
+            foreach my $dataset ($dataClass->findnodes('dataset')) {
+                my $dataAttr = GetDataAttributes($dataset, $classAttr);
+                my $dataName = $dataAttr->{NAME};
+                foreach my $dataVersion ($dataset->findnodes('dataVersion')) {
+                    my $versionAttr = GetDataAttributes($dataVersion, $dataAttr);
+                    my $versionId = $versionAttr->{LABEL} || '';
+                    if (defined $versionAttr->{COLLECTION_SHORTNAME}) {
+                        $collectionInfo->{$providerName}{$className}{$dataName}{$versionId}{'shortname'} = $versionAttr->{COLLECTION_SHORTNAME};
+                    } else {
+                        $collectionInfo->{$providerName}{$className}{$dataName}{$versionId}{'shortname'} = $dataName;
+                    }
+                    if (defined $versionAttr->{COLLECTION_VERSION}) {
+                        $collectionInfo->{$providerName}{$className}{$dataName}{$versionId}{'version'} = $versionAttr->{COLLECTION_VERSION};
+                    } else {
+                        $collectionInfo->{$providerName}{$className}{$dataName}{$versionId}{'version'} = $versionId;
+                    }
+                    if (defined $versionAttr->{COLLECTION_LINK}) {
+                        $collectionInfo->{$providerName}{$className}{$dataName}{$versionId}{'link'} = $versionAttr->{COLLECTION_LINK};
+                        if ($versionAttr->{COLLECTION_LINK} eq 'CMR') {
+                            $needToken = 1;
+                        }
+                    } else {
+                        $collectionInfo->{$providerName}{$className}{$dataName}{$versionId}{'link'} = 'S4PA';
+                    }
+                }
+            }
+        }
+    }
+
+    # get a CMR token for deployment use
+    if ($needToken) {
+        my ($cmrToken, $errmsg);
+        # CMR switch from Earthdata login to Launchpad token for authentication
+        if (defined $global->{CMR}{CERT_FILE}) {
+            my $tokenParam = {};
+            $tokenParam->{LP_URI} = $global->{CMR}{CMR_TOKEN_URI};
+            $tokenParam->{CMR_CERTFILE} = $global->{CMR}{CERT_FILE};
+            $tokenParam->{CMR_CERTPASS} = $global->{CMR}{CERT_PASS};
+            ($cmrToken, $errmsg) = S4PA::get_cmr_token($tokenParam);
+            unless (defined $cmrToken) {
+                DeployLogging('warn', "Unable to get Launchpad token: $errmsg");
+            }
+
+        # the original token acquiring from CMR/ECHO
+        } else {
+            my $tokenParam = {};
+            $tokenParam->{ECHO_URI} = $global->{CMR}{CMR_TOKEN_URI};
+            $tokenParam->{CMR_USERNAME} = $global->{CMR}{USERNAME};
+            my $cmr_encrypted_pwd = $global->{CMR}{PASSWORD};
+            $tokenParam->{CMR_PASSWORD} = Clavis::decrypt($cmr_encrypted_pwd) if $cmr_encrypted_pwd;
+            $tokenParam->{CMR_PROVIDER} = $global->{CMR}{PROVIDER};
+            ($cmrToken, $errmsg) = S4PA::get_cmr_token($tokenParam);
+            unless (defined $cmrToken) {
+                DeployLogging('warn', "Unable to get Launchpad token: $errmsg");
+            }
+
+            # my $cmr_username = $global->{CMR}{USERNAME};
+            # my $cmr_encrypted_pwd = $global->{CMR}{PASSWORD};
+            # my $cmr_decrypted_pwd = Clavis::decrypt( $cmr_encrypted_pwd ) if $cmr_encrypted_pwd;
+            # $cmrToken = login($cmr_username, $cmr_decrypted_pwd, $global->{CMR}{PROVIDER});
+        }
+
+        my $ua = LWP::UserAgent->new;
+        my $cmrProvider = $global->{CMR}{PROVIDER};
+        my $baseUri = $global->{CMR}{CMR_ENDPOINT_URI} . 'search/collections.umm-json?provider=' .
+            $global->{CMR}{PROVIDER};
+        foreach my $provider (keys %{$collectionInfo}) {
+            foreach my $class (keys %{$collectionInfo->{$provider}}) {
+                foreach my $set (keys %{$collectionInfo->{$provider}{$class}}) {
+                    foreach my $ver (keys %{$collectionInfo->{$provider}{$class}{$set}}) {
+                        next unless ($collectionInfo->{$provider}{$class}{$set}{$ver}{'link'} eq 'CMR');
+                        my $shortname = $collectionInfo->{$provider}{$class}{$set}{$ver}{'shortname'};
+                        my $version = $collectionInfo->{$provider}{$class}{$set}{$ver}{'version'};
+                        my $restUrl = $baseUri . '&short_name=' . $shortname .
+                            '&version=' . $version;
+                        my $request = HTTP::Request->new('GET', $restUrl, [Echo_Token => $cmrToken]);
+                        my $response = $ua->request($request);
+                        if ($response->is_success) {
+                            my $dif = $response->content;
+                            my $jsonRef = decode_json($dif);
+                            if ((exists $jsonRef->{'hits'}) && ($jsonRef->{'hits'}) == 0) {
+                                DeployLogging('warn', "Warning: Unable to find collection in CMR for $set.$ver");
+                                next;
+                            }
+                            my $conceptId;
+                            foreach my $coll (@{$jsonRef->{'items'}}) {
+                                $conceptId = $coll->{'meta'}{'concept-id'};
+                            }
+                            $collectionInfo->{$provider}{$class}{$set}{$ver}{'concept_id'} = $conceptId;
+                        } else {
+                            DeployLogging('warn', "Failed on CMR search request for $set.$ver");
+                        }
+                    }
+                } 
+            }
+        }
+    }
+
+    return $collectionInfo;
+}
+    
 ###############################################################################
 # =head1 Usage
 # 

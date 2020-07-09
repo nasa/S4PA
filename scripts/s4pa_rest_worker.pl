@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 
 =head1 NAME
 
@@ -18,24 +18,18 @@ I<workorder>
 =item I<-f configuration file>
 Post office configuration file
 
-=item I<-d temporary directory>
-Temporary root working directory for filter
-
-=item I<-n>
-Flag to trigger creation of data notification when data transfer is complete.
-
 =item I<workorder>
 
 Work order should be an XML file in the format
 
 <RestPackets>
+  [<HTTPheader>HeaderAttribute: header value</HTTPheader>]
   <RestPacket status="I|C"
 		label="userlabel"
 		notify="mailto: xx@yy.zz.com"
 		[destination="http[s]:xx.yy.zz.com/restful/path]
 		[numAttempt="n"]
 		[completed="<timestamp>"] >
-    [<HTTPheader>HeaderAttribute: header value</HTTPheader>]
     [
      <Payload>
        <SomeRootElement>
@@ -64,7 +58,7 @@ E. Seiler, NASA/GSFC, Code 610.2, Greenbelt, MD  20771.
 
 
 ################################################################################
-# $Id: s4pa_rest_worker.pl,v 1.3 2019/05/06 15:48:01 glei Exp $
+# $Id: s4pa_rest_worker.pl,v 1.4 2020/05/21 17:00:25 s4pa Exp $
 # -@@@ S4PA, Version $Name:  $
 ################################################################################
 use strict;
@@ -82,7 +76,8 @@ use S4PA::Storage;
 use HTTP::Request;
 use LWP::UserAgent;
 use Log::Log4perl;
-use vars qw($opt_n $opt_f $opt_d);
+use JSON;
+use vars qw($opt_f);
 
 # Use Net::SSH2 only if it is available
 BEGIN{
@@ -135,6 +130,52 @@ if ( defined $CFG::max_attempt ) {
     }
 }
 
+# Headers node is now directly under document instead of under each payload
+my $headers;
+
+# verify Launchpad token acquired from publishing station
+# get a new one from Launchpad if the original one expired
+if (defined $CFG::LAUNCHPAD_URI) {
+    my $tokenParam = {};
+    $tokenParam->{LP_URI} = $CFG::LAUNCHPAD_URI;
+    $tokenParam->{CMR_CERTFILE} = $CFG::CMR_CERTFILE;
+    $tokenParam->{CMR_CERTPASS} = $CFG::CMR_CERTPASS;
+
+    my (@headerNodes) = $doc->findnodes( 'HTTPheader' );
+    if (@headerNodes) {
+        $headers = HTTP::Headers->new;
+        foreach my $headerNode (@headerNodes) {
+            my ($field, $value) = split(':', $headerNode->textContent);
+            $value =~ s/^\s+//;
+            $value =~ s/\s+$//;
+
+            # extract current token to verify
+            if ($field =~ /Token/) {
+                $tokenParam->{LP_TOKEN} = $value;
+                my ($cmrToken, $errmsg);
+                ($cmrToken, $errmsg) = S4PA::get_cmr_token($tokenParam);
+                unless (defined $cmrToken) {
+                    S4P::perish(3, "Failed to get Launchpad token: $errmsg");
+                }
+                $headers->header($field, $cmrToken) if ( (defined $field) && (defined $cmrToken) );
+            } else {
+                $headers->header($field, $value) if ( (defined $field) && (defined $value) );
+            }
+        }
+    }
+
+# original token acquired from ECHO will not expire for a longer time, use it directly
+} else {
+    my (@headerNodes) = $doc->findnodes( 'HTTPheader' );
+    if (@headerNodes) {
+        $headers = HTTP::Headers->new;
+        foreach my $headerNode (@headerNodes) {
+            my ($field, $value) = split(':', $headerNode->textContent);
+            $headers->header($field, $value) if ( (defined $field) && (defined $value) );
+        }
+    }
+}
+
 # Find RestPackets node and its status.  Should be just one, at the root.
 my ( $packetsNode ) = $doc->findnodes('/RestPackets');
 my $packetsStatus = $packetsNode->getAttribute('status');
@@ -147,7 +188,6 @@ if ( $packetsStatus eq "C" ) {
     # Do nothing, packet complete.  (Should not occur.)
     exit(0);
 }
-
 
 # Loop through RestPacket nodes and process
 my $packetStatus = 'C';
@@ -166,15 +206,6 @@ foreach my $packetNode ( $doc->findnodes( '/RestPackets/RestPacket' ) ) {
     S4P::perish(1, "Invalid destination '$destination'")
         unless $protocol and $dest_string;
 
-    my $headers;
-    my (@headerNodes) = $packetNode->findnodes( 'HTTPheader' );
-    if (@headerNodes) {
-        $headers = HTTP::Headers->new;
-        foreach my $headerNode (@headerNodes) {
-            my ($field, $value) = split(':', $headerNode->textContent);
-            $headers->header($field, $value) if ( (defined $field) && (defined $value) );
-        }
-    }
     my ($payloadNode) = $packetNode->findnodes( 'Payload' );
     my $payload;
     my $cleanup;
@@ -268,16 +299,7 @@ if ( $packetStatus eq 'C' ) {
 }
 
 my $outWorkOrder;
-#if ( $opt_n ) {
-#    # Generate a work order for DN creation if transfers are complete.
-#    $outWorkOrder = ( $packetStatus eq 'C' )
-#	? "EMAIL.$jobId.wo" : "$jobType.$jobId.wo";
-#} else {
-    # Generate a work order for REST transfer if all packets haven't been
-    # transferred.
-    $outWorkOrder = ( $packetStatus eq 'C' )
-	? undef : "$jobType.$jobId.wo";
-#}
+$outWorkOrder = ( $packetStatus eq 'C' ) ? undef : "$jobType.$jobId.wo";
 
 if ( defined $outWorkOrder ) {
     local( *FH );

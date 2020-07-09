@@ -35,7 +35,7 @@ Guang-Dih Lei (Guang-Dih.Lei@nasa.gov)
 =cut
 
 ################################################################################
-# $Id: s4pa_zombie_monitor.pl,v 1.1 2019/06/30 21:10:10 glei Exp $
+# $Id: s4pa_zombie_monitor.pl,v 1.2 2020/02/07 12:27:20 s4pa Exp $
 # -@@@ S4PA, Version $Name:  $
 ################################################################################
 #
@@ -129,7 +129,7 @@ sub handle_zombies {
     foreach my $stn (@stations) {
         foreach my $job (glob("$stn/RUNNING*")) {
             my ($status, $pid, $owner, $orig_wo, $comment) = S4P::check_job($job);
-            if (check_for_zombie($pid, \%psmap)) {
+            if (check_for_zombie($pid, \%psmap, 1)) {
                 $zmsg .= "$job is a zombie!\n";
                 if ($kill) {
                     chdir($job);
@@ -193,6 +193,11 @@ sub check_for_zombie {
     my $pid = shift;
     my $psmap_r = shift;
     my %psmap = %{$psmap_r};
+    my $gen = shift;
+
+    $gen++;
+# stop checking past the third generation (grandchildren)
+    return(undef) if ($gen > 3);
 
     my $zstat;
 
@@ -200,7 +205,7 @@ sub check_for_zombie {
     return(undef) unless ($psmap{'children'}{$pid});
 
     foreach my $cpid (@{$psmap{'children'}{$pid}}) {
-        $zstat ||= check_for_zombie($cpid, $psmap_r);
+        $zstat ||= check_for_zombie($cpid, $psmap_r,$gen);
         $zstat = 1 if ($psmap{'status'}{$cpid} eq "Z");
     }
     return($zstat);

@@ -90,7 +90,7 @@ Ed Seiler (Ed.Seiler@nasa.gov)
 =cut
 
 ################################################################################
-# $Id: s4pa_publish_cmr.pl,v 1.12 2019/08/28 11:50:17 s4pa Exp $
+# $Id: s4pa_publish_cmr.pl,v 1.13 2020/05/21 16:51:57 s4pa Exp $
 # -@@@ S4PA, Version $Name:  $
 ################################################################################
 
@@ -110,6 +110,7 @@ use Log::Log4perl;
 use Cwd;
 use Clavis;
 use LWP::UserAgent;
+use JSON;
 use vars qw( $opt_c $opt_p $opt_x $opt_b $opt_s );
 
 getopts('c:p:x:b:s:v');
@@ -197,9 +198,30 @@ my $GranuleDeletesNode = XML::LibXML::Element->new('GranuleDeletes');
 #$browseDom->setDocumentElement( $root );
 #$browseDoc = $browseDom->documentElement();
 
-my $cmrPassword = Clavis::decrypt( $CFG::CMR_PASSWORD )
-    if ( defined $CFG::CMR_PASSWORD );
-my $cmrToken = login($CFG::CMR_USERNAME, $cmrPassword, $CFG::CMR_PROVIDER);
+my ($cmrToken, $errmsg);
+# CMR switch from Earthdata login to Launchpad token for authentication
+if (defined $CFG::LAUNCHPAD_URI) {
+    my $tokenParam = {};
+    $tokenParam->{LP_URI} = $CFG::LAUNCHPAD_URI;
+    $tokenParam->{CMR_CERTFILE} = $CFG::CMR_CERTFILE;
+    $tokenParam->{CMR_CERTPASS} = $CFG::CMR_CERTPASS;
+    ($cmrToken, $errmsg) = S4PA::get_cmr_token($tokenParam);
+    unless (defined $cmrToken) {
+        S4P::perish(3, "$errmsg");
+    }
+# the original token acquiring from CMR/ECHO
+} else {
+    my $tokenParam = {};
+    $tokenParam->{ECHO_URI} = $CFG::CMR_TOKEN_URI;
+    $tokenParam->{CMR_USERNAME} = $CFG::CMR_USERNAME;
+    my $cmr_encrypted_pwd = $CFG::CMR_PASSWORD;
+    $tokenParam->{CMR_PASSWORD} = Clavis::decrypt($cmr_encrypted_pwd) if $cmr_encrypted_pwd;
+    $tokenParam->{CMR_PROVIDER} = $CFG::CMR_PROVIDER;
+    ($cmrToken, $errmsg) = S4PA::get_cmr_token($tokenParam);
+    unless (defined $cmrToken) {
+        S4P::perish(3, "$errmsg");
+    }
+}
 
 # Loop for every file in the PDR directory
 my @processed_pdr;
@@ -801,6 +823,20 @@ sub create_rest_wo {
     my $woDoc = $woDom->documentElement();
     $woDoc->setAttribute('status', "I");
 
+    # move http request header outside each packet
+    if ($cmrToken) {
+        my $headerNode = XML::LibXML::Element->new('HTTPheader');
+        $headerNode->appendText("Echo-Token: $cmrToken");
+        $woDoc->appendChild($headerNode);
+    }
+    my $headerNode = XML::LibXML::Element->new('HTTPheader');
+    if ($CFG::CMR_ENDPOINT_URI =~ /cmr/i) {
+        $headerNode->appendText("Content-Type: application/echo10+xml");
+    } else {
+        $headerNode->appendText("Content-Type: application/xml");
+    }
+    $woDoc->appendChild($headerNode);
+
     my $destinationBase = $CFG::CMR_ENDPOINT_URI . 'ingest/providers/' .
                           $CFG::CMR_PROVIDER . '/granules/';
 
@@ -813,20 +849,8 @@ sub create_rest_wo {
         $restPacketNode->setAttribute('status', "I");
         my $destination = $destinationBase . $granuleUR;
         $restPacketNode->setAttribute('destination', $destination);
-        if ($cmrToken) {
-            my $headerNode = XML::LibXML::Element->new('HTTPheader');
-            $headerNode->appendText("Echo-Token: $cmrToken");
-            $restPacketNode->appendChild($headerNode);
-        }
 
         if ($type eq 'insert') {
-            my $headerNode = XML::LibXML::Element->new('HTTPheader');
-            if ($CFG::CMR_ENDPOINT_URI =~ /cmr/i) {
-                $headerNode->appendText("Content-Type: application/echo10+xml");
-            } else {
-                $headerNode->appendText("Content-Type: application/xml");
-            }
-            $restPacketNode->appendChild($headerNode);
             my $payloadNode = XML::LibXML::Element->new('Payload');
             $payloadNode->appendChild($node);
             $restPacketNode->appendChild($payloadNode);
@@ -844,45 +868,6 @@ sub create_rest_wo {
         return 0;
     }
     return(1);
-}
-
-sub login {
-
-    my ($username, $pwd, $provider) = @_;
-
-    my $hostname = Sys::Hostname::hostname();
-    my $packed_ip_address = (gethostbyname($hostname))[4];
-    my $ip_address = join('.', unpack('C4', $packed_ip_address));
-
-    my $tokenNode = XML::LibXML::Element->new('token');
-    $tokenNode->appendTextChild('username', $username);
-    $tokenNode->appendTextChild('password', $pwd);
-    $tokenNode->appendTextChild('client_id', 'GES_DISC');
-    $tokenNode->appendTextChild('user_ip_address', $ip_address);
-    $tokenNode->appendTextChild('provider', $provider);
-
-    my $id;
-    my $tokenUrl = $CFG::CMR_TOKEN_URI . 'tokens';
-    my $request = HTTP::Request->new( 'POST',
-                                      $tokenUrl,
-                                      [Content_Type => 'application/xml'],
-                                      $tokenNode->toString() );
-    my $ua = LWP::UserAgent->new;
-    my $response = $ua->request($request);
-    if ($response->is_success) {
-        my $xml = $response->content;
-        my $tokenDom;
-        my $xmlParser = XML::LibXML->new();
-        eval {$tokenDom = $xmlParser->parse_string($xml); };
-        S4P::perish( 2, "Could not parse response from CMR token request:  $@\n" ) if $@;
-        my $tokenDoc = $tokenDom->documentElement();
-        my ($idNode) = $tokenDoc->findnodes('/token/id');
-        $id = $idNode->textContent();
-    } else {
-        S4P::perish( 2, "Could not connect to CMR API for login; check if CMR API is down.\nReason:  $@\n" );
-    }
-
-    return $id;
 }
 
 sub CheckSkipping {
